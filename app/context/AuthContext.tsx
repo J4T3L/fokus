@@ -20,6 +20,7 @@ interface AuthContextType {
   users: User[];
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   register: (name: string, email: string, password: string, phone?: string, address?: string) => Promise<{ success: boolean; message: string }>;
+  loginWithGoogle: (googleUser: User) => void;
   logout: () => void;
   updateUser: (id: string, data: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
@@ -120,6 +121,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateUser(id, { role });
   };
 
+  const loginWithGoogle = (googleUser: User) => {
+    setUser(googleUser);
+    localStorage.setItem("fokus_user", JSON.stringify(googleUser));
+    setUsers(prev => {
+      if (prev.some(u => u.id === googleUser.id)) {
+        return prev.map(u => u.id === googleUser.id ? googleUser : u);
+      }
+      return [...prev, googleUser];
+    });
+  };
+
   const noop = async () => ({ success: false, message: "" });
 
   return (
@@ -128,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       users: mounted ? users : [],
       login: mounted ? login : noop,
       register: mounted ? register : noop,
+      loginWithGoogle: mounted ? loginWithGoogle : () => {},
       logout: mounted ? logout : () => {},
       updateUser: mounted ? updateUser : async () => {},
       deleteUser: mounted ? deleteUser : async () => {},

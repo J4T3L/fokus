@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
+import Script from "next/script";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -13,8 +14,66 @@ export default function RegisterPage() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const router = useRouter();
+
+  const initializeGoogle = () => {
+    if (typeof window === "undefined") return;
+    const google = (window as any).google;
+    if (!google?.accounts?.id) return;
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id.apps.googleusercontent.com";
+
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCallback,
+    });
+
+    const btnContainer = document.getElementById("google-signin-btn-reg");
+    if (btnContainer) {
+      google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: btnContainer.clientWidth || 460,
+        text: "signup_with",
+        shape: "rectangular",
+      });
+    }
+  };
+
+  const handleGoogleCallback = async (response: any) => {
+    const credential = response.credential;
+    if (!credential) return;
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loginWithGoogle(data.user);
+        router.push("/dashboard");
+      } else {
+        setError(data.message || "Gagal mendaftar menggunakan Google.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Terjadi kesalahan jaringan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+      initializeGoogle();
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +189,17 @@ export default function RegisterPage() {
             </button>
           </form>
 
+          <div className="relative my-6 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-neutral-200"></div>
+            </div>
+            <span className="relative bg-white px-3 text-[10px] font-mono uppercase tracking-widest text-slate-400">Atau</span>
+          </div>
+
+          <div className="w-full flex justify-center min-h-[44px]">
+            <div id="google-signin-btn-reg" className="w-full flex justify-center"></div>
+          </div>
+
           <div className="mt-8 text-center text-xs font-mono uppercase tracking-widest">
             <span className="text-slate-500">Sudah punya akun? </span>
             <Link href="/login" className="font-bold text-orange-700 hover:text-orange-950 transition-colors">
@@ -140,6 +210,11 @@ export default function RegisterPage() {
 
       </div>
       </div>
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="afterInteractive" 
+        onLoad={initializeGoogle} 
+      />
     </div>
   );
 }
