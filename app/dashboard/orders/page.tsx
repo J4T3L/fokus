@@ -31,7 +31,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const url = isAdmin ? "/api/orders" : `/api/orders?userId=${user.id}`;
+      const url = isAdmin ? "/api/orders" : `/api/orders?userId=${user?.id || ""}`;
       const res = await fetch(url);
       const data = await res.json();
       setOrders(data || []);

@@ -51,7 +51,14 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="text-[10px] font-mono uppercase tracking-widest text-slate-200 mb-1">Telepon / WhatsApp</h4>
-                      <p className="text-slate-400 text-xs font-mono tracking-wider leading-relaxed">+62 812-3456-7890<br/>Respon cepat jam kerja</p>
+                      <a
+                        href="https://wa.me/6281222200110"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-400 hover:text-orange-600 transition-colors text-xs font-mono tracking-wider leading-relaxed block"
+                      >
+                        +62 812-2220-0110<br/>Respon cepat jam kerja
+                      </a>
                     </div>
                   </div>
                   
@@ -71,14 +78,21 @@ export default function Contact() {
                     </div>
                     <div>
                       <h4 className="text-[10px] font-mono uppercase tracking-widest text-slate-200 mb-1">Lokasi Studio</h4>
-                      <p className="text-slate-400 text-xs font-mono tracking-wider leading-relaxed">Jl. Fotografi No. 42,<br/>Jakarta Selatan, 12340</p>
+                      <a
+                        href="https://maps.app.goo.gl/TofT9r3NMaHJUSFa9"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-400 hover:text-orange-600 transition-colors text-xs font-mono tracking-wider leading-relaxed block"
+                      >
+                        Karangan Putih, Kec. Kelua,<br/>Kabupaten Tabalong,<br/>Kalimantan Selatan 71552
+                      </a>
                     </div>
                   </div>
                 </div>
  
                 {/* Socials */}
                 <div className="flex gap-4 mt-12 pt-8 border-t border-neutral-800 relative z-10">
-                   <a href="#" className="w-8 h-8 border border-neutral-700 flex items-center justify-center text-xs font-mono text-slate-400 hover:border-white hover:text-white transition-colors" title="Instagram">IG</a>
+                   <a href="https://instagram.com/fokus-studio-" target="_blank" rel="noopener noreferrer" className="w-8 h-8 border border-neutral-700 flex items-center justify-center text-xs font-mono text-slate-400 hover:border-white hover:text-white transition-colors" title="Instagram">IG</a>
                    <a href="#" className="w-8 h-8 border border-neutral-700 flex items-center justify-center text-xs font-mono text-slate-400 hover:border-white hover:text-white transition-colors" title="Facebook">FB</a>
                    <a href="#" className="w-8 h-8 border border-neutral-700 flex items-center justify-center text-xs font-mono text-slate-400 hover:border-white hover:text-white transition-colors" title="Tiktok">TK</a>
                 </div>

@@ -17,7 +17,7 @@ export default function WhatsAppWidget() {
 
   if (!show) return null;
 
-  const phoneNumber = "6281234567890"; // Admin phone number fallback
+  const phoneNumber = "6281222200110"; // Admin phone number fallback
   const message = encodeURIComponent("Halo Admin Fokus, saya ingin bertanya tentang layanan studio/kamera.");
   const waUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 

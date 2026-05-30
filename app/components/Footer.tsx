@@ -62,11 +62,15 @@ export default function Footer() {
             © {year} Fokus Studio. All rights reserved.
           </p>
           <div className="flex gap-4">
-            {["Instagram", "Twitter", "Facebook"].map((social) => (
-              <a key={social} href="#" className="text-xs font-mono uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
-                {social}
-              </a>
-            ))}
+            <a href="https://instagram.com/fokus-studio-" target="_blank" rel="noopener noreferrer" className="text-xs font-mono uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
+              Instagram
+            </a>
+            <a href="#" className="text-xs font-mono uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
+              Twitter
+            </a>
+            <a href="#" className="text-xs font-mono uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
+              Facebook
+            </a>
           </div>
         </div>
       </div>

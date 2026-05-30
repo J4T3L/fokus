@@ -193,8 +193,8 @@ export default function InvoiceModal({ id, isOpen, onClose }: InvoiceModalProps)
                 </div>
                 <p className="text-[10px] font-mono text-slate-500 leading-relaxed uppercase tracking-wider">
                   Sewa Kamera, Studio &amp; Jasa Fotografi<br />
-                  Jl. Fotografi No. 42, Jakarta Selatan<br />
-                  hello@fokus.id | +62 812-3456-7890
+                  Karangan Putih, Kec. Kelua, Kabupaten Tabalong, Kalimantan Selatan 71552<br />
+                  hello@fokus.id | +62 812-2220-0110
                 </p>
               </div>
               <div className="sm:text-right">

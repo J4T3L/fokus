@@ -9,13 +9,13 @@ export default function Hero() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
-          
+
           {/* Left Text */}
           <div className="lg:w-1/2">
             <Reveal direction="up" delay={0}>
               <div className="inline-flex items-center px-4 py-2 bg-white border border-neutral-200 shadow-xs text-neutral-800 text-xs font-mono uppercase tracking-widest mb-8">
                 <span className="flex w-1.5 h-1.5 rounded-full bg-orange-600 mr-2.5 animate-pulse"></span>
-                Studio Fotografi &amp; Rental Alat • Jakarta
+                Studio Fotografi &amp; Rental Alat
               </div>
             </Reveal>
 
@@ -31,12 +31,12 @@ export default function Hero() {
                 Jasa fotografi profesional, penyewaan studio berstandar industri, dan peralatan kamera terlengkap untuk karya visual luar biasa.
               </p>
             </Reveal>
-            
+
             <Reveal direction="up" delay={300}>
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <a href="/layanan" className="btn-primary space-x-2 text-sm py-3 px-6">
                   <span>Mulai Sekarang</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </a>
                 <a href="/galeri" className="btn-secondary text-sm py-3 px-6">
                   Lihat Karya
@@ -66,13 +66,13 @@ export default function Hero() {
 
           {/* Right Image */}
           <div className="lg:w-1/2 relative w-full h-[400px] sm:h-[500px] lg:h-[600px]">
-             <Reveal direction="left" delay={200} className="w-full h-full">
+            <Reveal direction="left" delay={200} className="w-full h-full">
               <div className="absolute inset-0 bg-orange-100/50 transform rotate-1 scale-98 transition-transform duration-700 opacity-60"></div>
-              
+
               <div className="w-full h-full relative bg-white p-3 border border-neutral-200 viewfinder-box">
                 <div className="viewfinder-corners-bottom"></div>
                 <div className="viewfinder-center text-orange-600"></div>
-                
+
                 {/* Viewfinder metadata overlay */}
                 <div className="absolute top-6 left-6 z-20 flex gap-4 text-[9px] font-mono tracking-widest text-white bg-black/45 backdrop-blur-xs px-2.5 py-1">
                   <span>RAW</span>
@@ -91,10 +91,10 @@ export default function Hero() {
                 </div>
 
                 <div className="w-full h-full relative overflow-hidden bg-slate-100">
-                  <Image 
-                    src="/hero.png" 
-                    alt="Fotografer Fokus Studio" 
-                    fill 
+                  <Image
+                    src="/hero.png"
+                    alt="Fotografer Fokus Studio"
+                    fill
                     className="object-cover transition-transform duration-700 hover:scale-103"
                     priority
                     sizes="(max-width: 1024px) 100vw, 50vw"
