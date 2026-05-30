@@ -9,6 +9,8 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -20,7 +22,7 @@ export default function RegisterPage() {
     if (password.length < 6) { setError("Password minimal 6 karakter"); return; }
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    const result = await register(name, email, password);
+    const result = await register(name, email, password, phone, address);
     setLoading(false);
     if (result.success) router.push("/dashboard");
     else setError(result.message);
@@ -31,7 +33,7 @@ export default function RegisterPage() {
       <Navbar />
       <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+      <div className="sm:mx-auto sm:w-full sm:max-w-xl relative z-10">
         
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center w-12 h-12 border border-neutral-950 text-neutral-950 font-bold font-serif italic text-xl bg-white relative shadow-xs mb-6 group hover:border-orange-700">
@@ -59,39 +61,67 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Nama Lengkap</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
-                placeholder="Masukkan nama"
-              />
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Nama Lengkap</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
+                  placeholder="Masukkan nama"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Nomor Telepon / WA</label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
+                  placeholder="08XXXXXXXXXX"
+                />
+              </div>
             </div>
             
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
-                placeholder="nama@email.com"
-              />
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
+                  placeholder="nama@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
+                  placeholder="Minimal 6 karakter"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Password</label>
-              <input
-                type="password"
+              <label className="block text-xs font-mono uppercase tracking-widest text-slate-700 mb-2">Alamat Lengkap</label>
+              <textarea
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors"
-                placeholder="Minimal 6 karakter"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-neutral-300 bg-white font-mono text-xs focus:outline-hidden focus:border-orange-700 rounded-none transition-colors resize-none"
+                placeholder="Tuliskan alamat lengkap pengiriman/sewa..."
               />
             </div>
 

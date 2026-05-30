@@ -5,7 +5,7 @@ import { Role } from "@/app/context/AuthContext";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, phone } = await request.json();
+    const { name, email, password, phone, address } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         phone: phone || null,
+        address: address || null,
         role: "USER", // Default role
       },
     });
