@@ -1,37 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fokus Studio & Rental Platform
 
-## Getting Started
+Fokus Studio & Rental adalah aplikasi web modern berbasis Next.js untuk penyewaan studio foto, kamera, lensa, serta penyewaan jasa fotografer secara online. Aplikasi ini dilengkapi sistem verifikasi ketersediaan studio secara real-time, validasi stok sewa alat, payment gateway simulator, dan dasbor analitik keuangan.
 
-First, run the development server:
+---
 
+## 🚀 Fitur Utama
+
+1. **Kalender Ketersediaan Studio**: Menghindari tabrakan waktu sewa dengan jeda sterilisasi *cooldown* 30 menit.
+2. **Validasi Stok Alat**: Mengontrol kuantitas sewa kamera/lensa berdasarkan tanggal overlapping.
+3. **Cart Drawer Terintegrasi**: Keranjang belanja modular di sidebar global.
+4. **Simulator Webhook Pembayaran**: Simulasi VA bank dan QRIS dengan instant update database via webhook.
+5. **Ulasan & Rating Bintang**: Mengumpulkan umpan balik klien untuk ditampilkan dinamis di beranda depan.
+6. **Laporan Keuangan & Grafik SVG**: Dashboard grafik interaktif dan tombol ekspor data transaksi ke spreadsheet CSV.
+
+> [!NOTE]
+> Untuk dokumentasi detail mekanisme kerja backend dan alur klien dari setiap fitur, silakan baca [FITUR.md](./FITUR.md).
+
+---
+
+## 🛠️ Tech Stack & Prasyarat
+
+* **Frontend & Backend**: Next.js 15 (App Router), React, TailwindCSS
+* **Database & ORM**: SQLite & Prisma ORM
+* **State Management**: React Context (Auth, Cart)
+* **Animasi**: IntersectionObserver Reveal Component
+* **Runtime**: Node.js v18+
+
+---
+
+## 📦 Cara Inisiasi & Instalasi (Setup)
+
+Ikuti langkah-langkah di bawah ini untuk menjalankan proyek di lingkungan lokal Anda:
+
+### 1. Klon Repositori & Instal Dependensi
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone repository
+git clone https://github.com/mczaq/Fokus.git
+cd Fokus
+
+# Instal paket modul
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Konfigurasi Environment Variable
+Buat berkas `.env` di direktori utama (jika belum ada) dan isi dengan konfigurasi database SQLite:
+```env
+DATABASE_URL="file:./dev.db"
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Migrasi Database & Seeding Data
+Jalankan perintah Prisma untuk membuat tabel database SQLite dan mengisi data awal (dummy/seed data):
+```bash
+# Sinkronisasi schema Prisma ke SQLite
+npx prisma migrate dev --name init
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Jalankan seeder database
+npx prisma db seed
+```
 
-## Learn More
+### 4. Jalankan Development Server
+```bash
+npm run dev
+```
+Buka [http://localhost:3000](http://localhost:3000) di browser Anda untuk melihat aplikasi berjalan.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔑 Demo Akun Pengujian
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Gunakan akun demo berikut pada halaman login untuk menguji berbagai akses level:
 
-## Deploy on Vercel
+| Peran (Role) | Email | Password | Kegunaan |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@fokus.id` | `admin123` | Melihat grafik keuntungan SVG, mengekspor laporan keuangan CSV, dan mengelola order. |
+| **User** | `user@fokus.id` | `user123` | Simulasi booking studio, memilih sewa alat, checkout, melakukan pembayaran VA/QRIS, dan memberi ulasan bintang. |
+| **Super User** | `super@fokus.id` | `superuser123` | Mengakses metrik status server internal. |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Memorises
+## 🗂️ Struktur Direktori Utama
+
+* `/app` - Halaman utama Next.js, API Route handler, dan Context Providers.
+* `/app/components` - Komponen UI reusable (Navbar, CartDrawer, PaymentSimulator, dll).
+* `/app/dashboard` - Antarmuka halaman Dashboard khusus User dan Admin.
+* `/prisma` - Berkas konfigurasi skema Prisma (`schema.prisma`) dan skrip generator dummy data (`seed.ts`).
+* `/public` - Aset gambar statis, ikon, dan berkas statis lainnya.

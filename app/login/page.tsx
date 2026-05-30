@@ -97,9 +97,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Demo Accounts */}
+        {/* Demo Accounts - Digunakan untuk mempermudah login pengujian aplikasi */}
         <div className="mt-8 text-center bg-white border border-neutral-200 p-4">
-          <p className="mb-3 text-[9px] font-bold text-slate-400 font-mono uppercase tracking-widest">Demo Akun (Klik Untuk Mengisi)</p>
+          <p className="mb-1 text-[9px] font-bold text-slate-450 font-mono uppercase tracking-widest">Demo Akun (Klik Untuk Mengisi)</p>
+          <p className="mb-3 text-[8px] text-slate-400 font-mono">Gunakan akun Admin untuk mengakses Laporan Keuangan/Grafik SVG, atau akun User untuk simulasi Sewa &amp; Pembayaran.</p>
           <div className="flex flex-col gap-2">
             {[
               { role: "Admin", email: "admin@fokus.id", pass: "admin123" },
@@ -107,6 +108,7 @@ export default function LoginPage() {
             ].map((acc) => (
               <button
                 key={acc.role}
+                type="button"
                 onClick={() => { setEmail(acc.email); setPassword(acc.pass); setError(""); }}
                 className="px-3 py-1.5 border border-neutral-200 font-mono text-[9px] uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
               >
