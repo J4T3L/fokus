@@ -168,7 +168,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Quick Access Demo Credentials */}
+          {/* Quick Access Demo Credentials - Hapus komentar block di bawah untuk mengaktifkan kembali demo helper
           <div className="mt-6 border border-neutral-200 bg-white relative">
             <button
               type="button"
@@ -230,6 +230,7 @@ export default function LoginPage() {
               </div>
             )}
           </div>
+          */}
 
         </div>
       </div>

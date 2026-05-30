@@ -43,10 +43,29 @@ npm install
 ```
 
 ### 2. Konfigurasi Environment Variable
-Buat berkas `.env` di direktori utama (jika belum ada) dan isi dengan konfigurasi database SQLite:
+Buat berkas `.env` di direktori utama (jika belum ada) dan sesuaikan konfigurasi environment:
 ```env
-DATABASE_URL="file:./dev.db"
+# Koneksi Database
+DATABASE_URL="mysql://capture_user:password123@localhost:3306/capture"
+
+# Kredensial Google OAuth 2.0 (Google Sign-In)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 ```
+
+### 💡 Mengaktifkan Fitur Google Sign-In (Login via Gmail)
+Untuk mengaktifkan fungsionalitas Google Sign-In pada halaman Login & Registrasi:
+1. Buka [Google Cloud Console](https://console.cloud.google.com/).
+2. Buat proyek baru atau pilih proyek yang sudah ada.
+3. Buka menu **APIs & Services > Credentials**.
+4. Klik **Create Credentials** dan pilih **OAuth client ID**.
+5. Konfigurasikan **OAuth consent screen** (pilih User Type: *External*, isi informasi dasar).
+6. Pada jenis aplikasi, pilih **Web application**.
+7. Tambahkan URL pengujian lokal Anda pada bagian:
+   * **Authorized JavaScript origins**: `http://localhost:3000`
+   * **Authorized redirect URIs**: `http://localhost:3000`
+8. Salin **Client ID** yang dibuat (berformat `xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com`).
+9. Ubah nilai variabel `NEXT_PUBLIC_GOOGLE_CLIENT_ID` di dalam file `.env` Anda dengan Client ID tersebut.
+10. Restart dev server (`npm run dev`). Halaman login & daftar kini otomatis mengaktifkan integrasi Google secara langsung.
 
 ### 3. Migrasi Database & Seeding Data
 Jalankan perintah Prisma untuk membuat tabel database SQLite dan mengisi data awal (dummy/seed data):
