@@ -74,7 +74,7 @@ Gunakan akun demo berikut pada halaman login untuk menguji berbagai akses level:
 | :--- | :--- | :--- | :--- |
 | **Admin** | `admin@fokus.id` | `admin123` | Melihat grafik keuntungan SVG, mengekspor laporan keuangan CSV, dan mengelola order. |
 | **User** | `user@fokus.id` | `user123` | Simulasi booking studio, memilih sewa alat, checkout, melakukan pembayaran VA/QRIS, dan memberi ulasan bintang. |
-| **Super User** | `super@fokus.id` | `superuser123` | Mengakses metrik status server internal. |
+| **Super User** | `super@fokus.id` | `super123` | Mengakses metrik status server internal. |
 
 ---
 
