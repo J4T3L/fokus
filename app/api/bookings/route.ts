@@ -11,18 +11,50 @@ export async function GET() {
       }
     });
 
-    const mapped = bookings.map(b => ({
-      id: b.id,
-      user: b.user.name,
-      studio: b.studio.name,
-      date: b.date.toISOString().split("T")[0],
-      startTime: b.startTime,
-      endTime: b.endTime,
-      duration: b.duration,
-      status: b.status,
-      totalPrice: b.totalPrice,
-      notes: b.notes,
-    }));
+    const now = new Date();
+    const mapped = [];
+
+    for (const b of bookings) {
+      const bookingYear = b.date.getFullYear();
+      const bookingMonth = b.date.getMonth();
+      const bookingDay = b.date.getDate();
+
+      const [startH, startM] = b.startTime.split(":").map(Number);
+      const [endH, endM] = b.endTime.split(":").map(Number);
+
+      const startDateTime = new Date(bookingYear, bookingMonth, bookingDay, startH, startM);
+      const endDateTime = new Date(bookingYear, bookingMonth, bookingDay, endH, endM);
+
+      let currentStatus = b.status;
+
+      if (currentStatus !== "CANCELLED" && currentStatus !== "COMPLETED") {
+        if (now >= endDateTime) {
+          currentStatus = "COMPLETED";
+        } else if (now >= startDateTime && currentStatus !== "IN_USE") {
+          currentStatus = "IN_USE";
+        }
+      }
+
+      if (currentStatus !== b.status) {
+        await prisma.studioBooking.update({
+          where: { id: b.id },
+          data: { status: currentStatus },
+        });
+      }
+
+      mapped.push({
+        id: b.id,
+        user: b.user.name,
+        studio: b.studio.name,
+        date: b.date.toISOString().split("T")[0],
+        startTime: b.startTime,
+        endTime: b.endTime,
+        duration: b.duration,
+        status: currentStatus,
+        totalPrice: b.totalPrice,
+        notes: b.notes,
+      });
+    }
 
     return NextResponse.json(mapped);
   } catch (error) {
