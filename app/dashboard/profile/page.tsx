@@ -11,6 +11,14 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState("");
   const [saved, setSaved] = useState(false);
 
+  // States untuk Fitur Ganti Password
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+
   useEffect(() => {
     if (!isAuthenticated) router.push("/login");
     if (user) {
@@ -65,6 +73,48 @@ export default function ProfilePage() {
     updateUser(user.id, { name, phone, avatar });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Konfirmasi password baru tidak cocok.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError("Password baru minimal harus 6 karakter.");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          currentPassword,
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPasswordSuccess("Kata sandi Anda berhasil diperbarui.");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setPasswordError(data.message || "Gagal mengubah kata sandi.");
+      }
+    } catch {
+      setPasswordError("Terjadi kesalahan jaringan.");
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -125,6 +175,80 @@ export default function ProfilePage() {
             </div>
           </form>
         </div>
+
+        {/* Card Keamanan & Sandi */}
+        <div className="modern-card p-8 mt-8">
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Keamanan &amp; Sandi</h2>
+          <p className="text-slate-500 text-xs mb-6">Perbarui kata sandi untuk melindungi keamanan akun Anda.</p>
+
+          {passwordError && (
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-100 flex items-start">
+              <svg className="w-5 h-5 text-red-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="text-sm font-medium text-red-700">{passwordError}</span>
+            </div>
+          )}
+
+          {passwordSuccess && (
+            <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-100 flex items-start">
+              <svg className="w-5 h-5 text-green-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium text-green-700">{passwordSuccess}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleChangePassword} className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Password Lama</label>
+              <input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input-modern"
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Password Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-modern"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Konfirmasi Password Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-modern"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                type="submit"
+                disabled={savingPassword}
+                className="btn-primary py-2.5 px-6 shadow-md disabled:opacity-50"
+              >
+                {savingPassword ? "Menyimpan..." : "Simpan Sandi"}
+              </button>
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
   );

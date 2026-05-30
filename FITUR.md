@@ -90,3 +90,19 @@ Panel kendali laporan keuangan khusus admin untuk memantau performa bisnis secar
   * Tombol sekali klik **"Unduh Laporan (.csv)"** pada dashboard admin.
   * Mengekspor ID transaksi, nama penyewa, tanggal transaksi, kategori layanan, serta nilai rupiah nominal sewa.
   * Menyertakan UTF-8 BOM agar file CSV dapat dibuka di Microsoft Excel komputer lokal tanpa mengalami masalah pemisah kolom (separator).
+
+---
+
+## 7. Fitur Ganti Password Akun (Account Password Settings)
+Fitur keamanan terenkripsi bagi pengguna untuk memperbarui kata sandi mereka secara langsung dari profil pengaturan.
+
+* **Alur Klien**:
+  1. Pengguna masuk ke halaman **Settings** di dasbor.
+  2. Pada panel **Keamanan & Sandi**, isi kolom kata sandi lama, kata sandi baru, dan konfirmasi kata sandi baru.
+  3. Klik **Simpan Sandi**. Pesan sukses atau gagal akan dimuat secara dinamis.
+* **Validasi Server**:
+  * API: `POST` [app/api/auth/change-password/route.ts](file:///home/superbia/Website/capture/app/api/auth/change-password/route.ts)
+  * Memvalidasi bahwa password lama yang dimasukkan cocok dengan password terenkripsi di database menggunakan `bcryptjs.compare`.
+  * Memastikan password baru memiliki panjang minimal 6 karakter.
+  * Mengenkripsi password baru menggunakan salt rounds sebanyak 10 tingkat sebelum menyimpan pembaruan ke database.
+
