@@ -1,6 +1,8 @@
+"use client";
+import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
 
-const testimonials = [
+const staticTestimonials = [
   {
     name: "Anisa Rahmawati",
     role: "Klien Wedding",
@@ -25,6 +27,32 @@ const testimonials = [
 ];
 
 export default function Testimonials() {
+  const [list, setList] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/testimonials")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("Failed to fetch");
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped = data.map((t: any) => ({
+            name: t.user.name,
+            role: t.user.role === "client" ? "Pelanggan Fokus" : t.user.role === "admin" ? "Tim Fokus" : t.user.role,
+            text: t.text,
+            rating: t.rating,
+            avatar: t.user.name.slice(0, 1).toUpperCase()
+          }));
+          setList(mapped);
+        } else {
+          setList(staticTestimonials);
+        }
+      })
+      .catch(() => {
+        setList(staticTestimonials);
+      });
+  }, []);
   return (
     <section id="testimoni" className="py-24 bg-[#FAF9F5] border-t border-neutral-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,7 +68,7 @@ export default function Testimonials() {
         </Reveal>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((t, i) => (
+          {list.map((t, i) => (
             <Reveal key={i} delay={i * 150} direction="up" className="h-full">
               <div className="bg-white border border-neutral-200 viewfinder-box p-8 flex flex-col h-full rounded-none relative">
                 <div className="viewfinder-corners-bottom"></div>

@@ -130,11 +130,11 @@ export default function InvoiceModal({ id, isOpen, onClose }: InvoiceModalProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-0 sm:p-4 overflow-y-auto print:static print:bg-white print:p-0">
+    <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-xs z-[100] flex justify-center items-start overflow-y-auto p-4 sm:p-8 print:static print:bg-white print:p-0">
       {/* Background click to close */}
       <div className="fixed inset-0 -z-10 print:hidden" onClick={onClose} />
 
-      <div className="bg-white border border-neutral-200 p-6 sm:p-10 w-full max-w-3xl shadow-2xl relative rounded-none flex flex-col my-auto min-h-screen sm:min-h-0 print:border-0 print:shadow-none print:p-0 print:w-full print:max-w-none print:min-h-0">
+      <div className="bg-white border border-neutral-250 p-6 sm:p-10 w-full max-w-3xl shadow-2xl relative rounded-none flex flex-col my-4 sm:my-8 print:border-0 print:shadow-none print:p-0 print:w-full print:max-w-none print:min-h-0">
         
         {/* Viewfinder Corners (decorations) - Hidden on Print */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-neutral-400 print:hidden"></div>

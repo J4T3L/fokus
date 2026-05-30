@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       dbId: o.id,
       user: o.user.name,
       amount: "Rp " + o.totalAmount.toLocaleString("id-ID"),
+      rawAmount: o.totalAmount,
       status: o.status === "PENDING" ? "Menunggu Pembayaran" : 
               o.status === "PROCESSING" ? "Diproses" : 
               o.status === "ACTIVE" ? "Aktif" : 
@@ -69,6 +70,7 @@ export async function GET(request: Request) {
       dbId: b.id,
       user: b.user.name,
       amount: "Rp " + b.totalPrice.toLocaleString("id-ID"),
+      rawAmount: b.totalPrice,
       status: b.status === "PENDING" ? "Menunggu Pembayaran" : 
               b.status === "CONFIRMED" ? "Diproses" : 
               b.status === "IN_USE" ? "Aktif" : 
@@ -98,6 +100,54 @@ export async function POST(request: Request) {
 
     if (!userId || !items || !items.length) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Validate equipment stock for requested date range
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      for (const it of items) {
+        if (it.equipmentId) {
+          const eq = await prisma.equipment.findUnique({
+            where: { id: it.equipmentId }
+          });
+
+          if (!eq) {
+            return NextResponse.json({ error: `Peralatan tidak ditemukan.` }, { status: 404 });
+          }
+
+          // Query committed active order items overlap
+          const committedItems = await prisma.orderItem.findMany({
+            where: {
+              equipmentId: it.equipmentId,
+              order: {
+                status: {
+                  notIn: ["CANCELLED", "COMPLETED"]
+                },
+                startDate: {
+                  lte: end
+                },
+                endDate: {
+                  gte: start
+                }
+              }
+            },
+            select: {
+              quantity: true
+            }
+          });
+
+          const totalCommitted = committedItems.reduce((sum, item) => sum + item.quantity, 0);
+          const availableStock = eq.stock - totalCommitted;
+
+          if (it.quantity > availableStock) {
+            return NextResponse.json({
+              error: `Stok tidak mencukupi untuk ${eq.name}. Hanya tersedia ${Math.max(0, availableStock)} unit pada tanggal ${startDate} s/d ${endDate} (terpakai ${totalCommitted} dari total ${eq.stock} unit).`
+            }, { status: 400 });
+          }
+        }
+      }
     }
 
     const orderNumber = "ORD-" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);

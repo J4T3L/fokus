@@ -4,15 +4,24 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import InvoiceModal from "@/app/components/InvoiceModal";
+import PaymentSimulator from "@/app/components/PaymentSimulator";
+import ReviewModal from "@/app/components/ReviewModal";
 
 export default function OrdersPage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [payingId, setPayingId] = useState<string | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+
+  // Payment simulator states
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [simulatorOrderId, setSimulatorOrderId] = useState<string | null>(null);
+  const [simulatorAmount, setSimulatorAmount] = useState<number>(0);
+
+  // Review modal state
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
 
@@ -20,42 +29,30 @@ export default function OrdersPage() {
     if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated, router]);
 
+  const fetchOrders = async () => {
+    try {
+      const url = isAdmin ? "/api/orders" : `/api/orders?userId=${user.id}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setOrders(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
-    const fetchOrders = async () => {
-      try {
-        const url = isAdmin ? "/api/orders" : `/api/orders?userId=${user.id}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setOrders(data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchOrders();
   }, [user, isAdmin]);
 
   if (!user) return null;
 
-  const handleSimulatePayment = async (id: string) => {
-    setPayingId(id);
-    try {
-      const res = await fetch(`/api/orders/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Lunas / Diproses" })
-      });
-      if (res.ok) {
-        setOrders(orders.map(o => o.id === id ? { ...o, status: "Lunas / Diproses" } : o));
-        alert("Simulasi Payment Gateway Berhasil! Pembayaran Lunas.");
-      }
-    } catch (e) {
-      alert("Gagal memproses pembayaran");
-    } finally {
-      setPayingId(null);
-    }
+  const handleSimulatePayment = (id: string, amount: number) => {
+    setSimulatorOrderId(id);
+    setSimulatorAmount(amount);
+    setIsSimulatorOpen(true);
   };
 
   const handleAdminUpdateStatus = async (id: string, newStatus: string) => {
@@ -73,7 +70,8 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="animate-fade-up">
+    <>
+      <div className="animate-fade-up">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
@@ -126,11 +124,10 @@ export default function OrdersPage() {
                     <div className="flex flex-col items-end gap-1.5">
                       {!isAdmin && o.status === "Menunggu Pembayaran" ? (
                         <button
-                          onClick={() => handleSimulatePayment(o.id)}
-                          disabled={payingId === o.id}
+                          onClick={() => handleSimulatePayment(o.id, o.rawAmount || 0)}
                           className="btn-primary py-1.5 px-3 text-xs shadow-sm shadow-blue-500/20 w-[120px] cursor-pointer"
                         >
-                          {payingId === o.id ? "Memuat API..." : "Pay Now"}
+                          Pay Now
                         </button>
                       ) : isAdmin ? (
                         <select
@@ -145,7 +142,17 @@ export default function OrdersPage() {
                           <option value="Dibatalkan">Dibatalkan</option>
                         </select>
                       ) : (
-                        <div className="text-sm font-bold text-slate-900">{o.amount}</div>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="text-sm font-bold text-slate-900">{o.amount}</div>
+                          {o.status === "Selesai" && (
+                            <button
+                              onClick={() => setIsReviewOpen(true)}
+                              className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 mt-1 cursor-pointer"
+                            >
+                              ★ Beri Ulasan
+                            </button>
+                          )}
+                        </div>
                       )}
                       
                       <button
@@ -165,6 +172,7 @@ export default function OrdersPage() {
           </table>
         </div>
       </div>
+      </div>
 
       <InvoiceModal
         id={selectedInvoiceId}
@@ -174,6 +182,24 @@ export default function OrdersPage() {
           setSelectedInvoiceId(null);
         }}
       />
-    </div>
+
+      <PaymentSimulator
+        isOpen={isSimulatorOpen}
+        onClose={() => {
+          setIsSimulatorOpen(false);
+          setSimulatorOrderId(null);
+          setSimulatorAmount(0);
+        }}
+        orderId={simulatorOrderId || ""}
+        totalAmount={simulatorAmount}
+        onSuccess={fetchOrders}
+      />
+
+      <ReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        userId={user.id}
+      />
+    </>
   );
 }

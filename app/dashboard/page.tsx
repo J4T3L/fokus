@@ -10,6 +10,8 @@ interface StatData {
   activeOrders: number;
   newCustomers: number;
   systemLogs: { id: string, time: string, action: string }[];
+  monthlyEarnings: { month: string; amount: number }[];
+  transactions: { id: string; date: string; user: string; type: string; amount: number }[];
 }
 
 function UserView({ user }: { user: User }) {
@@ -101,6 +103,27 @@ function AdminView({ userRole }: { userRole: string }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const downloadCSV = () => {
+    if (!stats || !stats.transactions) return;
+    const headers = ["ID Transaksi", "Tanggal", "Nama Pelanggan", "Tipe Layanan", "Total Tagihan (IDR)"];
+    const rows = stats.transactions.map(t => [
+      `"${t.id}"`,
+      `"${t.date}"`,
+      `"${t.user}"`,
+      `"${t.type}"`,
+      t.amount
+    ]);
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `laporan_keuangan_fokus_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -181,6 +204,132 @@ function AdminView({ userRole }: { userRole: string }) {
              </div>
           )}
         </div>
+      </div>
+
+      {/* Financial Reports and SVG Graph Row */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* SVG Graph Card */}
+        <div className="lg:col-span-2 bg-white border border-neutral-200 viewfinder-box p-6 rounded-none relative">
+          <div className="viewfinder-corners-bottom"></div>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xs font-mono uppercase tracking-widest text-slate-400">Grafik Pendapatan</h2>
+              <h3 className="font-serif italic font-bold text-slate-800 text-lg">Perkembangan Keuntungan (6 Bulan Terakhir)</h3>
+            </div>
+            <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 border border-emerald-200">
+              Auto-sync
+            </span>
+          </div>
+
+          <div className="w-full h-[220px] flex items-center justify-center">
+            {loading ? (
+              <div className="text-xs font-mono uppercase text-slate-400">Loading chart...</div>
+            ) : !stats?.monthlyEarnings || stats.monthlyEarnings.length === 0 ? (
+              <div className="text-xs font-mono uppercase text-slate-400">Data tidak cukup</div>
+            ) : (
+              (() => {
+                const data = stats.monthlyEarnings;
+                const maxAmount = Math.max(...data.map(e => e.amount), 1000000);
+                const points = data.map((e, idx) => {
+                  const x = idx * 70 + 50;
+                  const y = 170 - (e.amount / maxAmount) * 120;
+                  return `${x},${y}`;
+                }).join(" ");
+
+                return (
+                  <svg className="w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(194, 65, 12)" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="rgb(194, 65, 12)" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Gridlines */}
+                    <line x1="40" y1="50" x2="480" y2="50" stroke="#f1f1ee" strokeDasharray="3,3" />
+                    <line x1="40" y1="110" x2="480" y2="110" stroke="#f1f1ee" strokeDasharray="3,3" />
+                    <line x1="40" y1="170" x2="480" y2="170" stroke="#e4e4e0" strokeWidth="1" />
+
+                    {/* Gradient Area under line */}
+                    {data.length > 0 && (
+                      <path
+                        d={`M 50,170 L ${points} L ${50 + (data.length - 1) * 70},170 Z`}
+                        fill="url(#chart-grad)"
+                      />
+                    )}
+
+                    {/* Line Path */}
+                    <polyline
+                      fill="none"
+                      stroke="rgb(194, 65, 12)"
+                      strokeWidth="2.5"
+                      points={points}
+                    />
+
+                    {/* Data Points */}
+                    {data.map((e, idx) => {
+                      const x = idx * 70 + 50;
+                      const y = 170 - (e.amount / maxAmount) * 120;
+                      return (
+                        <g key={idx} className="group cursor-pointer">
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="4.5"
+                            className="fill-orange-700 stroke-white stroke-[2px]"
+                          />
+                          {/* Value Tooltip Label */}
+                          <text
+                            x={x}
+                            y={y - 12}
+                            textAnchor="middle"
+                            className="fill-slate-900 font-mono text-[9px] font-bold"
+                          >
+                            {e.amount > 0 ? (e.amount / 1000000).toFixed(1) + "M" : "0"}
+                          </text>
+                          {/* X Axis label */}
+                          <text
+                            x={x}
+                            y="190"
+                            textAnchor="middle"
+                            className="fill-slate-400 font-mono text-[9px] uppercase tracking-wider font-semibold"
+                          >
+                            {e.month}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                );
+              })()
+            )}
+          </div>
+        </div>
+
+        {/* Financial Export Card */}
+        <div className="bg-white border border-neutral-200 viewfinder-box p-6 rounded-none flex flex-col justify-between relative">
+          <div className="viewfinder-corners-bottom"></div>
+          <div>
+            <h2 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-1">Ekspor Data Keuangan</h2>
+            <h3 className="font-serif italic font-bold text-slate-800 text-base mb-4">Laporan Pembayaran Terkonfirmasi</h3>
+            <p className="text-slate-500 text-xs leading-relaxed mb-6 font-mono">
+              Unduh salinan berkas CSV berisi rincian seluruh pembayaran berhasil. Cocok untuk pelaporan pajak &amp; pembukuan studio bulanan.
+            </p>
+          </div>
+          
+          <button
+            onClick={downloadCSV}
+            disabled={loading || !stats?.transactions || stats.transactions.length === 0}
+            className="w-full btn-primary bg-slate-900 hover:bg-slate-950 text-white font-mono text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Unduh Laporan (.csv)
+          </button>
+        </div>
+
       </div>
     </>
   );

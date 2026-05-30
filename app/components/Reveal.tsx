@@ -13,19 +13,34 @@ export default function Reveal({ children, className = "", delay = 0, direction 
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Fallback timer: force visibility after 800ms if observer fails to fire
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 800);
+
+    if (!("IntersectionObserver" in window)) {
+      setIsVisible(true);
+      return () => clearTimeout(timer);
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          // Optional: Only trigger once
+          clearTimeout(timer);
           observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+      { threshold: 0.01, rootMargin: "0px 0px -20px 0px" }
     );
 
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   const directionClass = 

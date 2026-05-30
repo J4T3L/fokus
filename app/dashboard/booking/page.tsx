@@ -83,18 +83,13 @@ export default function BookingPage() {
   useEffect(() => {
     if (bookingType === "studio" && selectedStudio && studioDate) {
       setLoadingSchedules(true);
-      fetch("/api/bookings")
+      fetch(`/api/bookings/availability?studioId=${selectedStudio.id}&date=${studioDate}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error("Failed to load schedules");
         })
         .then((data) => {
-          const filtered = (data || []).filter((b: any) => 
-            b.studio === selectedStudio.name &&
-            b.date === studioDate &&
-            b.status !== "CANCELLED"
-          );
-          setExistingBookings(filtered);
+          setExistingBookings(data || []);
         })
         .catch((err) => console.error("Error loading schedules:", err))
         .finally(() => setLoadingSchedules(false));

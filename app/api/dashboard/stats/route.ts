@@ -114,6 +114,85 @@ export async function GET() {
       .slice(0, 8)
       .map(({ id, time, action }) => ({ id, time, action }));
 
+    // Fetch past 6 months of orders & bookings to calculate monthly earnings
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const completedOrdersPast6Months = await prisma.order.findMany({
+      where: {
+        status: { in: ["CONFIRMED", "PROCESSING", "ACTIVE", "COMPLETED"] },
+        createdAt: { gte: sixMonthsAgo }
+      },
+      select: { totalAmount: true, createdAt: true, orderNumber: true, user: { select: { name: true } } }
+    });
+
+    const completedBookingsPast6Months = await prisma.studioBooking.findMany({
+      where: {
+        status: { in: ["CONFIRMED", "IN_USE", "COMPLETED"] },
+        createdAt: { gte: sixMonthsAgo }
+      },
+      select: { totalPrice: true, createdAt: true, id: true, studio: { select: { name: true } }, user: { select: { name: true } } }
+    });
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const monthlyTracker: { [key: string]: number } = {};
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
+      monthlyTracker[key] = 0;
+    }
+
+    completedOrdersPast6Months.forEach(o => {
+      const m = new Date(o.createdAt);
+      const key = `${monthNames[m.getMonth()]} ${m.getFullYear().toString().slice(-2)}`;
+      if (monthlyTracker[key] !== undefined) {
+        monthlyTracker[key] += o.totalAmount;
+      }
+    });
+
+    completedBookingsPast6Months.forEach(b => {
+      const m = new Date(b.createdAt);
+      const key = `${monthNames[m.getMonth()]} ${m.getFullYear().toString().slice(-2)}`;
+      if (monthlyTracker[key] !== undefined) {
+        monthlyTracker[key] += b.totalPrice;
+      }
+    });
+
+    const monthlyEarnings = Object.keys(monthlyTracker).map(month => ({
+      month,
+      amount: monthlyTracker[month]
+    }));
+
+    const transactionsList: any[] = [];
+    completedOrdersPast6Months.forEach(o => {
+      transactionsList.push({
+        id: o.orderNumber,
+        rawDate: o.createdAt,
+        date: o.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        user: o.user.name,
+        type: "Sewa Alat/Jasa",
+        amount: o.totalAmount
+      });
+    });
+
+    completedBookingsPast6Months.forEach(b => {
+      transactionsList.push({
+        id: `STB-${b.id.slice(-8).toUpperCase()}`,
+        rawDate: b.createdAt,
+        date: b.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        user: b.user.name,
+        type: `Studio ${b.studio.name}`,
+        amount: b.totalPrice
+      });
+    });
+
+    // Sort descending by rawDate
+    transactionsList.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
     const stats = {
       revenue,
       pendingOrders,
@@ -122,6 +201,8 @@ export async function GET() {
       systemLogs: sortedLogs.length > 0 ? sortedLogs : [
         { id: "log-default", time: "09:00", action: "Sistem Fokus Studio berjalan normal." }
       ],
+      monthlyEarnings,
+      transactions: transactionsList.map(({ id, date, user, type, amount }) => ({ id, date, user, type, amount }))
     };
 
     return NextResponse.json(stats);
