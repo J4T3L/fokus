@@ -137,15 +137,15 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login");
-  }, [isAuthenticated, router]);
+    if (!loading && !isAuthenticated) router.push("/login");
+  }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!user || (user.role !== "admin" && user.role !== "superuser")) return;
@@ -169,6 +169,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const interval = setInterval(fetchUnread, 10000);
     return () => clearInterval(interval);
   }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F5] flex items-center justify-center font-mono text-xs text-slate-400 uppercase tracking-widest">
+        Memuat Dashboard...
+      </div>
+    );
+  }
 
   if (!user) return null;
 

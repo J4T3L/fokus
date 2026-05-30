@@ -26,6 +26,7 @@ interface AuthContextType {
   deleteUser: (id: string) => Promise<void>;
   changeRole: (id: string, role: Role) => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       deleteUser: mounted ? deleteUser : async () => {},
       changeRole: mounted ? changeRole : async () => {},
       isAuthenticated: mounted ? !!user : false,
+      loading: !mounted,
     }}>
       {children}
     </AuthContext.Provider>
