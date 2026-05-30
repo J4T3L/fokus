@@ -37,85 +37,113 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@fokus.id" },
-    update: {},
+    update: {
+      phone: "081234567890",
+      address: "Gedung Fokus Studio Lt. 3, Jakarta Pusat",
+    },
     create: {
       name: "Admin Fokus",
       email: "admin@fokus.id",
       password: adminPass,
       phone: "081234567890",
       role: "ADMIN",
+      address: "Gedung Fokus Studio Lt. 3, Jakarta Pusat",
     },
   });
 
   const superuser = await prisma.user.upsert({
     where: { email: "super@fokus.id" },
-    update: {},
+    update: {
+      phone: "081234567891",
+      address: "Jl. Merdeka No. 101, Jakarta Pusat",
+    },
     create: {
       name: "Super User",
       email: "super@fokus.id",
       password: superPass,
       phone: "081234567891",
       role: "SUPERUSER",
+      address: "Jl. Merdeka No. 101, Jakarta Pusat",
     },
   });
 
   const user1 = await prisma.user.upsert({
     where: { email: "user@fokus.id" },
-    update: {},
+    update: {
+      phone: "081234567892",
+      address: "Jl. Melati No. 15, Bandung",
+    },
     create: {
       name: "John Doe",
       email: "user@fokus.id",
       password: userPass,
       phone: "081234567892",
       role: "USER",
+      address: "Jl. Melati No. 15, Bandung",
     },
   });
 
   const user2 = await prisma.user.upsert({
     where: { email: "anisa@gmail.com" },
-    update: {},
+    update: {
+      phone: "081298765432",
+      address: "Jl. Anggrek No. 42, Surabaya",
+    },
     create: {
       name: "Anisa Rahmawati",
       email: "anisa@gmail.com",
       password: userPass,
       phone: "081298765432",
       role: "USER",
+      address: "Jl. Anggrek No. 42, Surabaya",
     },
   });
 
   const user3 = await prisma.user.upsert({
     where: { email: "budi@gmail.com" },
-    update: {},
+    update: {
+      phone: "081345678901",
+      address: "Jl. Kenanga No. 8, Yogyakarta",
+    },
     create: {
       name: "Budi Santoso",
       email: "budi@gmail.com",
       password: userPass,
       phone: "081345678901",
       role: "USER",
+      address: "Jl. Kenanga No. 8, Yogyakarta",
     },
   });
 
   const user4 = await prisma.user.upsert({
     where: { email: "dewi@gmail.com" },
-    update: {},
+    update: {
+      phone: "081456789012",
+      address: "Jl. Kamboja No. 23, Medan",
+    },
     create: {
       name: "Dewi Lestari",
       email: "dewi@gmail.com",
       password: userPass,
       phone: "081456789012",
       role: "USER",
+      address: "Jl. Kamboja No. 23, Medan",
     },
   });
 
   const user5 = await prisma.user.upsert({
     where: { email: "rizky@gmail.com" },
-    update: {},
+    update: {
+      phone: "081567890123",
+      address: "Jl. Dahlia No. 7, Semarang",
+    },
     create: {
       name: "Rizky Pratama",
       email: "rizky@gmail.com",
       password: userPass,
       phone: "081567890123",
       role: "USER",
+      address: "Jl. Dahlia No. 7, Semarang",
     },
   });
 

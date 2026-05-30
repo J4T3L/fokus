@@ -10,6 +10,7 @@ export interface User {
   role: Role;
   avatar?: string;
   phone?: string;
+  address?: string;
   joinedAt: string;
   isActive?: boolean;
 }

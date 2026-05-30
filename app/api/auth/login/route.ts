@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         email: user.email,
         role: user.role.toLowerCase() as Role,
         phone: user.phone || undefined,
+        address: user.address || undefined,
         avatar: user.avatar || undefined,
         joinedAt: user.createdAt.toISOString().split("T")[0],
       },

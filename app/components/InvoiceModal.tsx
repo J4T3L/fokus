@@ -5,6 +5,7 @@ interface InvoiceUser {
   name: string;
   email: string;
   phone?: string;
+  address?: string;
 }
 
 interface InvoiceItem {
@@ -221,7 +222,8 @@ export default function InvoiceModal({ id, isOpen, onClose }: InvoiceModalProps)
                 </div>
                 <p className="text-[10px] font-mono text-slate-500 leading-normal uppercase tracking-wider">
                   Email: {data.user.email}<br />
-                  Telepon: {data.user.phone || "-"}
+                  Telepon: {data.user.phone || "-"}<br />
+                  {data.user.address && <>Alamat: {data.user.address}</>}
                 </p>
               </div>
               <div className="sm:text-right">

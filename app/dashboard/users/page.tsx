@@ -92,6 +92,11 @@ export default function UsersPage() {
                   <td className="px-6 py-4">
                     <div className="text-sm font-bold text-slate-700">{u.email}</div>
                     <div className="text-xs text-slate-400 mt-0.5">{u.phone || "Tidak ada nomor"}</div>
+                    {u.address && (
+                      <div className="text-[11px] text-slate-500 mt-1 max-w-[220px] truncate" title={u.address}>
+                        📍 {u.address}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${

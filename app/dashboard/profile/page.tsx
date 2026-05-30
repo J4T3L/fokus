@@ -9,6 +9,7 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [address, setAddress] = useState("");
   const [saved, setSaved] = useState(false);
 
   // States untuk Fitur Ganti Password
@@ -25,6 +26,7 @@ export default function ProfilePage() {
       setName(user.name);
       setPhone(user.phone || "");
       setAvatar(user.avatar || "");
+      setAddress(user.address || "");
     }
   }, [isAuthenticated, user, router]);
 
@@ -70,7 +72,7 @@ export default function ProfilePage() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUser(user.id, { name, phone, avatar });
+    updateUser(user.id, { name, phone, avatar, address });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -168,6 +170,17 @@ export default function ProfilePage() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Nomor Telepon / WhatsApp</label>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="08xx..." className="input-modern" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Alamat Lengkap</label>
+              <textarea
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                placeholder="Tuliskan alamat lengkap pengiriman/sewa..."
+                rows={3}
+                className="input-modern"
+              />
             </div>
             
             <div className="pt-4 flex justify-end">

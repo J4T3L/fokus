@@ -13,7 +13,7 @@ export async function GET(
     let order = await prisma.order.findUnique({
       where: { orderNumber: id },
       include: {
-        user: { select: { name: true, email: true, phone: true } },
+        user: { select: { name: true, email: true, phone: true, address: true } },
         items: {
           include: {
             equipment: { select: { name: true, brand: true } },
@@ -28,7 +28,7 @@ export async function GET(
       order = await prisma.order.findUnique({
         where: { id: id },
         include: {
-          user: { select: { name: true, email: true, phone: true } },
+          user: { select: { name: true, email: true, phone: true, address: true } },
           items: {
             include: {
               equipment: { select: { name: true, brand: true } },
@@ -70,7 +70,7 @@ export async function GET(
     let booking = await prisma.studioBooking.findUnique({
       where: { id: id },
       include: {
-        user: { select: { name: true, email: true, phone: true } },
+        user: { select: { name: true, email: true, phone: true, address: true } },
         studio: { select: { name: true, pricePerHour: true } },
       },
     });
@@ -80,7 +80,7 @@ export async function GET(
       const suffix = id.replace("STB-", "").toLowerCase();
       const bookings = await prisma.studioBooking.findMany({
         include: {
-          user: { select: { name: true, email: true, phone: true } },
+          user: { select: { name: true, email: true, phone: true, address: true } },
           studio: { select: { name: true, pricePerHour: true } },
         },
       });

@@ -32,6 +32,7 @@ export async function PUT(
         name: data.name !== undefined ? data.name : existing.name,
         email: data.email !== undefined ? data.email : existing.email,
         phone: data.phone !== undefined ? data.phone : existing.phone,
+        address: data.address !== undefined ? data.address : existing.address,
         role: prismaRole !== undefined ? prismaRole : existing.role,
         avatar: data.avatar !== undefined ? data.avatar : existing.avatar,
         isActive: data.isActive !== undefined ? data.isActive : existing.isActive,
