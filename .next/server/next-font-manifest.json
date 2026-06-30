@@ -1,0 +1,87 @@
+{
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/booking/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/chat/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/equipment/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/gallery/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/orders/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/payments/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/profile/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/schedule/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/services/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/studios/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/dashboard/users/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/galeri/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/katalog/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/layanan/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/login/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/register/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ],
+    "[project]/app/studio/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.08e28id.o-okb.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

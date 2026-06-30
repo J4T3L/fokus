@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
+import { sendOrderNotificationEmail } from "@/app/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -175,6 +176,30 @@ export async function POST(request: Request) {
         items: true,
       },
     });
+
+    // Send email notification to user asynchronously
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      if (user?.email) {
+        const fullOrder = await prisma.order.findUnique({
+          where: { id: created.id },
+          include: {
+            items: {
+              include: {
+                equipment: { select: { name: true } },
+                service: { select: { name: true } },
+              }
+            }
+          }
+        });
+        await sendOrderNotificationEmail(fullOrder, user.email);
+      }
+    } catch (emailErr) {
+      console.error("Failed to send order email:", emailErr);
+    }
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

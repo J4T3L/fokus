@@ -26,9 +26,41 @@ interface ModalProps {
 
 function GalleryModal({ title, onClose, onSave, initial = {} }: ModalProps) {
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM, ...initial });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const set = (k: keyof FormData, v: string | boolean) =>
     setForm(prev => ({ ...prev, [k]: v }));
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal mengunggah berkas");
+      }
+
+      set("image", data.url);
+    } catch (err: any) {
+      console.error(err);
+      setUploadError(err.message || "Gagal mengunggah berkas");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,17 +83,66 @@ function GalleryModal({ title, onClose, onSave, initial = {} }: ModalProps) {
             <input required className="input-modern" value={form.title} onChange={e => set("title", e.target.value)} placeholder="Contoh: Prewedding Budi & Susi" />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori</label>
-              <select className="input-modern" value={form.category} onChange={e => set("category", e.target.value)}>
-                {PORTFOLIO_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori *</label>
+            <select className="input-modern" value={form.category} onChange={e => set("category", e.target.value)}>
+              {PORTFOLIO_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Foto Karya *</label>
+            <div className="relative">
+              {form.image ? (
+                <div className="relative aspect-video rounded-xl overflow-hidden group border border-slate-200 shadow-sm bg-slate-50">
+                  <img
+                    src={form.image}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <label className="cursor-pointer bg-white text-slate-800 hover:bg-slate-50 px-4 py-2 rounded-lg text-xs font-semibold shadow-md transition-colors flex items-center gap-1.5">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+                      Ganti Foto
+                      <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => set("image", "")}
+                      className="bg-red-650 text-white hover:bg-red-700 px-4 py-2 rounded-lg text-xs font-semibold shadow-md transition-colors flex items-center gap-1.5"
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m14.74 9-.34 9m-4.78 0L9 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${uploadError ? "border-red-350 bg-red-50/50 hover:bg-red-50" : "border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400"}`}>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+                  
+                  {uploading ? (
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
+                      <span className="text-xs text-slate-500 font-mono uppercase tracking-widest mt-1">Mengunggah...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-500">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
+                      </div>
+                      <span className="text-xs font-bold text-slate-700 mb-1">Pilih Berkas Foto</span>
+                      <span className="text-[10px] text-slate-400 text-center leading-normal">Mendukung format JPG, PNG, atau WEBP</span>
+                    </>
+                  )}
+                </label>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">URL / Path Gambar *</label>
-              <input required className="input-modern" value={form.image} onChange={e => set("image", e.target.value)} placeholder="/portfolio-wedding.png" />
-            </div>
+            {uploadError && (
+              <p className="mt-2 text-xs font-mono text-red-600 flex items-center gap-1">
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                {uploadError}
+              </p>
+            )}
           </div>
 
           <div>
@@ -85,25 +166,15 @@ function GalleryModal({ title, onClose, onSave, initial = {} }: ModalProps) {
             </div>
           </div>
 
-          {form.image && (
-            <div className="border border-slate-100 rounded-xl p-3 bg-slate-50">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Pratinjau Gambar</span>
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-200">
-                <img
-                  src={form.image}
-                  alt="Preview"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=600";
-                  }}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          )}
-
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="btn-secondary px-5 py-2 text-sm">Batal</button>
-            <button type="submit" className="btn-primary px-5 py-2 text-sm">Simpan</button>
+            <button type="button" onClick={onClose} className="btn-secondary px-5 py-2 text-sm" disabled={uploading}>Batal</button>
+            <button 
+              type="submit" 
+              className="btn-primary px-5 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={uploading || !form.title || !form.image}
+            >
+              Simpan
+            </button>
           </div>
         </form>
       </div>

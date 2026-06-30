@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
+import { sendOrderNotificationEmail, sendBookingNotificationEmail } from "@/app/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
 
     if (order) {
       // Update Order to PROCESSING
-      await prisma.order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: order.id },
         data: { status: "PROCESSING" },
       });
@@ -37,6 +38,30 @@ export async function POST(request: Request) {
           orderId: order.id,
         },
       });
+
+      // Send email confirmation
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: order.userId },
+          select: { email: true }
+        });
+        if (user?.email) {
+          const fullOrder = await prisma.order.findUnique({
+            where: { id: order.id },
+            include: {
+              items: {
+                include: {
+                  equipment: { select: { name: true } },
+                  service: { select: { name: true } },
+                }
+              }
+            }
+          });
+          await sendOrderNotificationEmail(fullOrder, user.email);
+        }
+      } catch (err) {
+        console.error("Webhook email error for order:", err);
+      }
 
       return NextResponse.json({ success: true, type: "order", payment });
     }
@@ -59,6 +84,25 @@ export async function POST(request: Request) {
         where: { id: booking.id },
         data: { status: "CONFIRMED" },
       });
+
+      // Send email confirmation
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: booking.userId },
+          select: { email: true }
+        });
+        if (user?.email) {
+          const fullBooking = await prisma.studioBooking.findUnique({
+            where: { id: booking.id },
+            include: {
+              studio: { select: { name: true } }
+            }
+          });
+          await sendBookingNotificationEmail(fullBooking, user.email);
+        }
+      } catch (err) {
+        console.error("Webhook email error for booking:", err);
+      }
 
       return NextResponse.json({ success: true, type: "booking", booking: updatedBooking });
     }

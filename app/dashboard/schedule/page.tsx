@@ -9,6 +9,9 @@ export default function SchedulePage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState(""); // empty means show all, or pick a date
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("calendar");
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
   // Modal states
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
@@ -136,6 +139,39 @@ export default function SchedulePage() {
     }
   };
 
+  // Calendar helpers
+  const MONTHS = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  const DAYS_OF_WEEK = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const getDaysInMonth = (m: number, y: number) => {
+    return new Date(y, m + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (m: number, y: number) => {
+    return new Date(y, m, 1).getDay();
+  };
+
   // Filter logic
   const filteredBookings = filterDate
     ? bookings.filter((b) => b.date === filterDate)
@@ -151,22 +187,44 @@ export default function SchedulePage() {
             Pantau slot waktu sewa studio. {isAdmin && "Klik baris pesanan untuk mengubah tanggal, waktu, atau status."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-mono font-bold text-slate-400 uppercase">Filter Tanggal:</label>
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg bg-white shadow-xs focus:outline-hidden focus:border-orange-700"
-          />
-          {filterDate && (
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* View Mode Toggle */}
+          <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
             <button
-              onClick={() => setFilterDate("")}
-              className="text-xs text-orange-700 font-bold hover:text-orange-900"
+              onClick={() => setViewMode("calendar")}
+              className={`px-3 py-1.5 text-xs font-semibold font-mono uppercase tracking-wider transition-colors cursor-pointer ${
+                viewMode === "calendar" ? "bg-orange-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              Reset
+              Kalender
             </button>
-          )}
+            <button
+              onClick={() => setViewMode("table")}
+              className={`px-3 py-1.5 text-xs font-semibold font-mono uppercase tracking-wider transition-colors cursor-pointer ${
+                viewMode === "table" ? "bg-orange-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Tabel
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-mono font-bold text-slate-400 uppercase">Filter Tanggal:</label>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="px-3 py-1.5 border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg bg-white shadow-xs focus:outline-hidden focus:border-orange-700"
+            />
+            {filterDate && (
+              <button
+                onClick={() => setFilterDate("")}
+                className="text-xs text-orange-700 font-bold hover:text-orange-900"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -220,123 +278,214 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {/* Tabel Jadwal */}
-        <div className="lg:col-span-3">
-          <div className="modern-card overflow-hidden bg-white border border-neutral-200">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-neutral-200">
-                    <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Tanggal &amp; Waktu</th>
-                    <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Ruangan</th>
-                    <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Pelanggan</th>
-                    <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Status</th>
-                    {isAdmin && (
-                      <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 text-center">Aksi</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400 font-mono text-xs">
-                        Loading jadwal sewa...
-                      </td>
-                    </tr>
-                  ) : filteredBookings.length === 0 ? (
-                    <tr>
-                      <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400 font-mono text-xs">
-                        {filterDate ? "Tidak ada jadwal sewa pada tanggal tersebut." : "Belum ada riwayat booking studio."}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredBookings.map((s, i) => (
-                      <tr
-                        key={i}
-                        onClick={() => handleOpenEdit(s)}
-                        className={`transition-colors ${
-                          isAdmin ? "hover:bg-slate-50/80 cursor-pointer" : "hover:bg-slate-50/30"
-                        }`}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="font-mono text-xs font-bold text-slate-700">
-                            {new Date(s.date).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
+        {/* Kalender / Tabel Jadwal */}
+        {viewMode === "calendar" ? (
+          /* Premium Month Calendar View */
+          <div className="lg:col-span-3">
+            <div className="modern-card p-6 bg-white border border-neutral-200">
+              {/* Calendar Month Header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                <h3 className="font-serif italic font-bold text-xl text-slate-900">
+                  {MONTHS[currentMonth]} {currentYear}
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold font-mono rounded-lg transition-colors cursor-pointer"
+                  >
+                    &larr; Prev
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold font-mono rounded-lg transition-colors cursor-pointer"
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
+              </div>
+
+              {/* Days of Week Grid Header */}
+              <div className="grid grid-cols-7 gap-2 text-center border-b border-slate-100 pb-3 mb-3">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div key={day} className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days Grid */}
+              <div className="grid grid-cols-7 gap-2">
+                {/* Empty offset cells */}
+                {Array.from({ length: getFirstDayOfMonth(currentMonth, currentYear) }).map((_, idx) => (
+                  <div key={`empty-${idx}`} className="aspect-square bg-slate-50/20 border border-transparent rounded-lg"></div>
+                ))}
+
+                {/* Month Days */}
+                {Array.from({ length: getDaysInMonth(currentMonth, currentYear) }).map((_, idx) => {
+                  const dayNum = idx + 1;
+                  const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dayNum.toString().padStart(2, "0")}`;
+                  const dayBookings = bookings.filter((b) => b.date === dateStr);
+
+                  return (
+                    <div
+                      key={`day-${dayNum}`}
+                      className="aspect-square p-2 border border-slate-100 rounded-lg bg-slate-50/5 hover:bg-slate-50/30 transition-colors flex flex-col justify-between group relative min-h-[90px]"
+                    >
+                      <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-slate-800 transition-colors">
+                        {dayNum}
+                      </span>
+
+                      {/* Booking List Pills */}
+                      <div className="space-y-1 mt-1 overflow-y-auto max-h-[60px] scrollbar-thin">
+                        {dayBookings.slice(0, 3).map((b, bIdx) => (
+                          <div
+                            key={bIdx}
+                            onClick={() => handleOpenEdit(b)}
+                            className={`text-[9px] font-mono p-1 rounded-sm cursor-pointer truncate ${
+                              b.status === "COMPLETED"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                : b.status === "IN_USE"
+                                ? "bg-red-50 text-red-700 border border-red-100"
+                                : b.status === "CONFIRMED"
+                                ? "bg-amber-50 text-amber-700 border border-amber-100"
+                                : "bg-blue-50 text-blue-700 border border-blue-100"
+                            }`}
+                            title={`${b.user} - ${b.studio} (${b.startTime}-${b.endTime})`}
+                          >
+                            {b.studio.replace("Studio ", "")}: {b.startTime}
                           </div>
-                          <div className="font-mono text-[10px] text-slate-400 mt-1">
-                            {s.startTime} - {s.endTime} ({s.duration} jam)
+                        ))}
+                        {dayBookings.length > 3 && (
+                          <div className="text-[7px] font-mono text-slate-400 text-center">
+                            +{dayBookings.length - 3} booking
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-serif font-semibold text-neutral-900 text-sm">{s.studio}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-900 text-sm">{s.user}</div>
-                          <div className="text-xs font-medium text-slate-400 mt-0.5 line-clamp-1">
-                            {s.notes || "Sewa Studio"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-2 h-2 rounded-full ${
-                                s.status === "IN_USE"
-                                  ? "bg-red-500 animate-pulse"
-                                  : s.status === "COMPLETED"
-                                  ? "bg-emerald-500"
-                                  : s.status === "CONFIRMED"
-                                  ? "bg-amber-500"
-                                  : s.status === "CANCELLED"
-                                  ? "bg-slate-350"
-                                  : "bg-blue-500"
-                              }`}
-                            ></span>
-                            <span
-                              className={`text-[10px] font-mono uppercase tracking-wider font-bold ${
-                                s.status === "IN_USE"
-                                  ? "text-red-600"
-                                  : s.status === "COMPLETED"
-                                  ? "text-emerald-700"
-                                  : s.status === "CONFIRMED"
-                                  ? "text-amber-700"
-                                  : s.status === "CANCELLED"
-                                  ? "text-slate-400"
-                                  : "text-blue-600"
-                              }`}
-                            >
-                              {s.status === "IN_USE"
-                                ? "Berlangsung"
-                                : s.status === "COMPLETED"
-                                ? "Selesai"
-                                : s.status === "CONFIRMED"
-                                ? "Disetujui"
-                                : s.status === "CANCELLED"
-                                ? "Dibatalkan"
-                                : "Pending"}
-                            </span>
-                          </div>
-                        </td>
-                        {isAdmin && (
-                          <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => handleOpenEdit(s)}
-                              className="px-2.5 py-1 border border-neutral-950 font-mono text-[9px] uppercase tracking-widest text-neutral-950 hover:bg-neutral-950 hover:text-white transition-colors"
-                            >
-                              Ubah
-                            </button>
-                          </td>
                         )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Tabel Jadwal */
+          <div className="lg:col-span-3">
+            <div className="modern-card overflow-hidden bg-white border border-neutral-200">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-neutral-200">
+                      <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Tanggal &amp; Waktu</th>
+                      <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Ruangan</th>
+                      <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Pelanggan</th>
+                      <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400">Status</th>
+                      {isAdmin && (
+                        <th className="px-6 py-4 text-[10px] font-mono uppercase tracking-widest text-slate-400 text-center">Aksi</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400 font-mono text-xs">
+                          Loading jadwal sewa...
+                        </td>
+                      </tr>
+                    ) : filteredBookings.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400 font-mono text-xs">
+                          {filterDate ? "Tidak ada jadwal sewa pada tanggal tersebut." : "Belum ada riwayat booking studio."}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredBookings.map((s, i) => (
+                        <tr
+                          key={i}
+                          onClick={() => handleOpenEdit(s)}
+                          className={`transition-colors ${
+                            isAdmin ? "hover:bg-slate-50/80 cursor-pointer" : "hover:bg-slate-50/30"
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="font-mono text-xs font-bold text-slate-700">
+                              {new Date(s.date).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-400 mt-1">
+                              {s.startTime} - {s.endTime} ({s.duration} jam)
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="font-serif font-semibold text-neutral-900 text-sm">{s.studio}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-slate-900 text-sm">{s.user}</div>
+                            <div className="text-xs font-medium text-slate-400 mt-0.5 line-clamp-1">
+                              {s.notes || "Sewa Studio"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  s.status === "IN_USE"
+                                    ? "bg-red-500 animate-pulse"
+                                    : s.status === "COMPLETED"
+                                    ? "bg-emerald-500"
+                                    : s.status === "CONFIRMED"
+                                    ? "bg-amber-500"
+                                    : s.status === "CANCELLED"
+                                    ? "bg-slate-350"
+                                    : "bg-blue-500"
+                                }`}
+                              ></span>
+                              <span
+                                className={`text-[10px] font-mono uppercase tracking-wider font-bold ${
+                                  s.status === "IN_USE"
+                                    ? "text-red-600"
+                                    : s.status === "COMPLETED"
+                                    ? "text-emerald-700"
+                                    : s.status === "CONFIRMED"
+                                    ? "text-amber-700"
+                                    : s.status === "CANCELLED"
+                                    ? "text-slate-400"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {s.status === "IN_USE"
+                                  ? "Berlangsung"
+                                  : s.status === "COMPLETED"
+                                  ? "Selesai"
+                                  : s.status === "CONFIRMED"
+                                  ? "Disetujui"
+                                  : s.status === "CANCELLED"
+                                  ? "Dibatalkan"
+                                  : "Pending"}
+                              </span>
+                            </div>
+                          </td>
+                          {isAdmin && (
+                            <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleOpenEdit(s)}
+                                className="px-2.5 py-1 border border-neutral-950 font-mono text-[9px] uppercase tracking-widest text-neutral-950 hover:bg-neutral-950 hover:text-white transition-colors"
+                              >
+                                Ubah
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Booking Modal */}

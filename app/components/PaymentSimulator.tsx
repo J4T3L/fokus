@@ -20,6 +20,8 @@ export default function PaymentSimulator({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [midtransToken, setMidtransToken] = useState<string | null>(null);
+  const [midtransLoading, setMidtransLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,14 +29,41 @@ export default function PaymentSimulator({
       setSuccess(false);
       setLoading(false);
       setCopied(false);
+      setMidtransToken(null);
       document.body.style.overflow = "hidden";
+
+      // Fetch Midtrans token
+      setMidtransLoading(true);
+      fetch("/api/payments/midtrans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.token) {
+            setMidtransToken(data.token);
+            // Load midtrans script dynamically
+            const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
+            const existingScript = document.getElementById("midtrans-snap-script");
+            if (!existingScript) {
+              const script = document.createElement("script");
+              script.src = snapScriptUrl;
+              script.id = "midtrans-snap-script";
+              script.setAttribute("data-client-key", process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "");
+              document.body.appendChild(script);
+            }
+          }
+        })
+        .catch((err) => console.error("Error fetching Midtrans token:", err))
+        .finally(() => setMidtransLoading(false));
     } else {
       document.body.style.overflow = "unset";
     }
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [isOpen, orderId]);
 
   if (!isOpen) return null;
 
@@ -88,6 +117,35 @@ export default function PaymentSimulator({
       alert("Terjadi kesalahan koneksi simulator.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const payWithMidtrans = () => {
+    if (typeof window !== "undefined" && (window as any).snap) {
+      (window as any).snap.pay(midtransToken, {
+        onSuccess: function (result: any) {
+          console.log("Midtrans payment success:", result);
+          setSuccess(true);
+          setTimeout(() => {
+            onSuccess();
+            onClose();
+          }, 2000);
+        },
+        onPending: function (result: any) {
+          console.log("Midtrans payment pending:", result);
+          alert("Pembayaran tertunda. Silakan selesaikan pembayaran Anda sesuai petunjuk Midtrans.");
+          onClose();
+        },
+        onError: function (result: any) {
+          console.error("Midtrans payment error:", result);
+          alert("Pembayaran gagal. Silakan coba kembali.");
+        },
+        onClose: function () {
+          console.log("User closed payment popup.");
+        }
+      });
+    } else {
+      alert("Memuat sistem pembayaran Midtrans... Silakan coba lagi dalam beberapa detik.");
     }
   };
 
@@ -158,7 +216,24 @@ export default function PaymentSimulator({
               <div>
                 <h3 className="text-xs font-bold text-slate-900 font-mono uppercase tracking-widest mb-4">Pilih Cara Pembayaran</h3>
                 <div className="space-y-3">
-                  
+                  {midtransLoading && (
+                    <div className="text-center py-2 text-[10px] font-mono text-slate-400">
+                      Memeriksa ketersediaan pembayaran online...
+                    </div>
+                  )}
+                  {midtransToken && (
+                    <button
+                      onClick={payWithMidtrans}
+                      className="w-full flex items-center justify-between p-3.5 bg-orange-700 hover:bg-orange-850 text-white transition-colors text-left group cursor-pointer shadow-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-6 bg-white flex items-center justify-center text-[8px] font-extrabold text-orange-700 border font-mono">MIDTRANS</div>
+                        <span className="text-xs font-bold text-white">Bayar Online Aman (GoPay, ShopeePay, CC, dll)</span>
+                      </div>
+                      <span className="text-white group-hover:translate-x-1 transition-transform text-xs">&rarr;</span>
+                    </button>
+                  )}
+
                   {/* BCA */}
                   <button 
                     onClick={() => setMethod("BCA")}

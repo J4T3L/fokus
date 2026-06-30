@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
+import { sendBookingNotificationEmail } from "@/app/lib/email";
 
 export async function GET() {
   try {
@@ -134,6 +135,25 @@ export async function POST(request: Request) {
         status: "PENDING",
       },
     });
+
+    // Send email notification to user asynchronously
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true }
+      });
+      if (user?.email) {
+        const fullBooking = await prisma.studioBooking.findUnique({
+          where: { id: created.id },
+          include: {
+            studio: { select: { name: true } }
+          }
+        });
+        await sendBookingNotificationEmail(fullBooking, user.email);
+      }
+    } catch (emailErr) {
+      console.error("Failed to send booking email:", emailErr);
+    }
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
