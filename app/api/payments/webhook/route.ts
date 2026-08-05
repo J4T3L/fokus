@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { sendOrderNotificationEmail, sendBookingNotificationEmail } from "@/app/lib/email";
+import { syncEquipmentStock } from "@/app/lib/equipmentStock";
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,12 @@ export async function POST(request: Request) {
         where: { id: order.id },
         data: { status: "PROCESSING" },
       });
+
+      try {
+        await syncEquipmentStock();
+      } catch (stockErr) {
+        console.error("Failed to sync stock in webhook:", stockErr);
+      }
 
       // Create Payment entry
       const payment = await prisma.payment.create({

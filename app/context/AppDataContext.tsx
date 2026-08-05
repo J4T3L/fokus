@@ -63,6 +63,7 @@ export interface CartItem {
 interface AppDataContextType {
   // Equipment
   equipment: Equipment[];
+  refreshEquipment: () => Promise<void>;
   addEquipment: (item: Omit<Equipment, "id" | "createdAt">) => Promise<void>;
   updateEquipment: (id: string, data: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
@@ -134,6 +135,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []);
+
+  const refreshEquipment = async () => {
+    try {
+      const res = await fetch("/api/equipment");
+      if (res.ok) setEquipment(await res.json());
+    } catch (e) {
+      console.error("Failed to refresh equipment stock:", e);
+    }
+  };
 
   // Sync helper
   const saveCartToStorage = (newCart: CartItem[]) => {
@@ -303,13 +313,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const value: AppDataContextType = mounted ? {
-    equipment, addEquipment, updateEquipment, deleteEquipment,
+    equipment, refreshEquipment, addEquipment, updateEquipment, deleteEquipment,
     studios, addStudio, updateStudio, deleteStudio,
     services, addService, updateService, deleteService,
     portfolio, addPortfolio, updatePortfolio, deletePortfolio,
     cart, addToCart, removeFromCart, updateCartQty, clearCart,
   } : {
-    equipment: [], addEquipment: async () => {}, updateEquipment: async () => {}, deleteEquipment: async () => {},
+    equipment: [], refreshEquipment: async () => {}, addEquipment: async () => {}, updateEquipment: async () => {}, deleteEquipment: async () => {},
     studios: [], addStudio: async () => {}, updateStudio: async () => {}, deleteStudio: async () => {},
     services: [], addService: async () => {}, updateService: async () => {}, deleteService: async () => {},
     portfolio: [], addPortfolio: async () => {}, updatePortfolio: async () => {}, deletePortfolio: async () => {},

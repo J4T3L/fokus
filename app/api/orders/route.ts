@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { sendOrderNotificationEmail } from "@/app/lib/email";
+import { syncEquipmentStock } from "@/app/lib/equipmentStock";
 
 export async function GET(request: Request) {
   try {
@@ -199,6 +200,13 @@ export async function POST(request: Request) {
       }
     } catch (emailErr) {
       console.error("Failed to send order email:", emailErr);
+    }
+
+    // Sync equipment stock if order contains equipment
+    try {
+      await syncEquipmentStock();
+    } catch (stockErr) {
+      console.error("Failed to sync equipment stock:", stockErr);
     }
 
     return NextResponse.json(created, { status: 201 });

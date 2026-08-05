@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { OrderStatus, BookingStatus } from "../../../generated/prisma/client";
+import { syncEquipmentStock } from "@/app/lib/equipmentStock";
 
 export async function GET(
   request: Request,
@@ -161,6 +162,12 @@ export async function PUT(
         where: { id: order.id },
         data: { status: prismaStatus },
       });
+
+      try {
+        await syncEquipmentStock();
+      } catch (err) {
+        console.error("Failed to sync stock after status update:", err);
+      }
 
       return NextResponse.json(updated);
     }
