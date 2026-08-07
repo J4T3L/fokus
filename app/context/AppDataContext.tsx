@@ -39,6 +39,7 @@ export interface Service {
   priceStart: number; // IDR
   duration?: string;  // e.g. "4-6 jam"
   includes: string[]; // list of included items
+  image?: string;
   isActive: boolean;
   createdAt: string;
 }

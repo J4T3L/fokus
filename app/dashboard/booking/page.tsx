@@ -455,20 +455,37 @@ export default function BookingPage() {
                       <div
                         key={st.id}
                         onClick={() => setSelectedStudio(st)}
-                        className={`p-6 rounded-2xl border cursor-pointer hover:border-blue-400 transition-all ${
+                        className={`overflow-hidden rounded-2xl border cursor-pointer hover:border-blue-400 transition-all ${
                           selectedStudio?.id === st.id ? "border-blue-500 bg-blue-50/10 ring-2 ring-blue-500/20" : "border-slate-200 bg-white"
                         }`}
                       >
-                        <h3 className="font-bold text-slate-900 text-lg mb-2">{st.name}</h3>
-                        <p className="text-sm text-slate-500 mb-4 line-clamp-3">{st.description || "Studio sewa eksklusif."}</p>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {st.facilities.map((fac, idx) => (
-                            <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">{fac}</span>
-                          ))}
+                        {/* Studio Image */}
+                        <div className="h-44 w-full bg-slate-100 relative overflow-hidden">
+                          {st.image ? (
+                            <img src={st.image} alt={st.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+                              <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M3 9h18"/></svg>
+                            </div>
+                          )}
+                          {selectedStudio?.id === st.id && (
+                            <span className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                              ✓ Terpilih
+                            </span>
+                          )}
                         </div>
-                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                          <span className="text-xs text-slate-400">Kapasitas: <strong className="text-slate-700">{st.capacity} orang</strong></span>
-                          <span className="text-base font-extrabold text-blue-600">{formatIDR(st.pricePerHour)}/jam</span>
+                        <div className="p-5">
+                          <h3 className="font-bold text-slate-900 text-lg mb-2">{st.name}</h3>
+                          <p className="text-sm text-slate-500 mb-4 line-clamp-3">{st.description || "Studio sewa eksklusif."}</p>
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {st.facilities.map((fac, idx) => (
+                              <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">{fac}</span>
+                            ))}
+                          </div>
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <span className="text-xs text-slate-400">Kapasitas: <strong className="text-slate-700">{st.capacity} orang</strong></span>
+                            <span className="text-base font-extrabold text-blue-600">{formatIDR(st.pricePerHour)}/jam</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -485,23 +502,30 @@ export default function BookingPage() {
                       <div
                         key={sv.id}
                         onClick={() => setSelectedService(sv)}
-                        className={`p-6 rounded-2xl border cursor-pointer hover:border-purple-400 transition-all ${
+                        className={`overflow-hidden rounded-2xl border cursor-pointer hover:border-purple-400 transition-all ${
                           selectedService?.id === sv.id ? "border-purple-500 bg-purple-50/10 ring-2 ring-purple-500/20" : "border-slate-200 bg-white"
                         }`}
                       >
-                        <span className="inline-block bg-purple-100 text-purple-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mb-3 uppercase tracking-wide">{sv.category}</span>
-                        <h3 className="font-bold text-slate-900 text-lg mb-2">{sv.name}</h3>
-                        <p className="text-sm text-slate-500 mb-4 line-clamp-3">{sv.description}</p>
-                        
-                        <div className="text-xs font-bold text-slate-800 mb-2">Termasuk:</div>
-                        <ul className="text-xs text-slate-500 space-y-1 mb-4 list-disc pl-4">
-                          {sv.includes.slice(0, 3).map((inc, i) => <li key={i}>{inc}</li>)}
-                          {sv.includes.length > 3 && <li>dan lainnya...</li>}
-                        </ul>
+                        {sv.image && (
+                          <div className="h-36 w-full bg-slate-100 relative overflow-hidden">
+                            <img src={sv.image} alt={sv.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <span className="inline-block bg-purple-100 text-purple-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mb-3 uppercase tracking-wide">{sv.category}</span>
+                          <h3 className="font-bold text-slate-900 text-lg mb-2">{sv.name}</h3>
+                          <p className="text-sm text-slate-500 mb-4 line-clamp-3">{sv.description}</p>
+                          
+                          <div className="text-xs font-bold text-slate-800 mb-2">Termasuk:</div>
+                          <ul className="text-xs text-slate-500 space-y-1 mb-4 list-disc pl-4">
+                            {sv.includes.slice(0, 3).map((inc, i) => <li key={i}>{inc}</li>)}
+                            {sv.includes.length > 3 && <li>dan lainnya...</li>}
+                          </ul>
 
-                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                          <span className="text-xs text-slate-400">Durasi: <strong className="text-slate-700">{sv.duration || "Sesuai Sesi"}</strong></span>
-                          <span className="text-base font-extrabold text-purple-600">Mulai {formatIDR(sv.priceStart)}</span>
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <span className="text-xs text-slate-400">Durasi: <strong className="text-slate-700">{sv.duration || "Sesuai Sesi"}</strong></span>
+                            <span className="text-base font-extrabold text-purple-600">Mulai {formatIDR(sv.priceStart)}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -521,10 +545,17 @@ export default function BookingPage() {
                       <div className="space-y-2">
                         {cart.map((entry) => (
                           <div key={entry.equipment.id} className="flex justify-between items-center bg-white p-2 rounded-lg border border-orange-100 text-xs">
-                            <span className="font-bold text-slate-900">{entry.equipment.name} <span className="text-slate-400 font-normal">x{entry.quantity}</span></span>
+                            <div className="flex items-center gap-2">
+                              {entry.equipment.image ? (
+                                <img src={entry.equipment.image} alt={entry.equipment.name} className="w-8 h-8 object-cover rounded-md border border-slate-200 shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 bg-slate-100 rounded-md shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">📷</div>
+                              )}
+                              <span className="font-bold text-slate-900">{entry.equipment.name} <span className="text-slate-400 font-normal">x{entry.quantity}</span></span>
+                            </div>
                             <div className="flex items-center gap-3">
                               <span className="font-bold text-orange-600">{formatIDR(entry.equipment.pricePerDay * entry.quantity)}/hari</span>
-                              <button onClick={() => removeFromCart(entry.equipment.id)} className="text-red-500 hover:text-red-700 font-semibold font-mono">Hapus</button>
+                              <button onClick={() => removeFromCart(entry.equipment.id)} className="text-red-500 hover:text-red-700 font-semibold font-mono cursor-pointer">Hapus</button>
                             </div>
                           </div>
                         ))}
@@ -546,7 +577,7 @@ export default function BookingPage() {
                         <button
                            key={cat}
                           onClick={() => setEquipFilterCat(cat)}
-                          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                             equipFilterCat === cat
                               ? "bg-slate-900 text-white border-slate-900"
                               : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -559,38 +590,53 @@ export default function BookingPage() {
                   </div>
 
                   {/* Grid items */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[350px] overflow-y-auto pr-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[420px] overflow-y-auto pr-2">
                     {filteredEquipment.map((eq) => {
                       const inCart = cart.find((entry) => entry.equipment.id === eq.id);
                       return (
-                        <div key={eq.id} className="p-4 rounded-xl border border-slate-100 hover:border-orange-300 transition-all flex flex-col justify-between bg-slate-50/50">
+                        <div key={eq.id} className="overflow-hidden rounded-xl border border-slate-200 hover:border-orange-400 transition-all flex flex-col justify-between bg-white shadow-xs">
                           <div>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{eq.brand} · {eq.category}</span>
-                            <h4 className="font-bold text-sm text-slate-900 mt-1 line-clamp-1">{eq.name}</h4>
-                            <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{eq.description}</p>
+                            {/* Equipment Image */}
+                            <div className="h-32 w-full bg-slate-100 relative overflow-hidden border-b border-slate-100">
+                              {eq.image ? (
+                                <img src={eq.image} alt={eq.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                </div>
+                              )}
+                              <span className={`absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-md ${eq.available > 0 ? "bg-emerald-600/90 text-white" : "bg-slate-800/90 text-slate-200"}`}>
+                                {eq.available > 0 ? `Stok: ${eq.available}` : "Habis"}
+                              </span>
+                            </div>
+                            <div className="p-3">
+                              <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest">{eq.brand} · {eq.category}</span>
+                              <h4 className="font-bold text-xs text-slate-900 mt-0.5 line-clamp-1">{eq.name}</h4>
+                              <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{eq.description}</p>
+                            </div>
                           </div>
                           
-                          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                          <div className="p-3 pt-0 flex items-center justify-between border-t border-slate-100 mt-2 pt-2">
                             <div>
                               <div className="text-[10px] text-slate-400">Harga/Hari</div>
                               <div className="text-xs font-bold text-orange-600">{formatIDR(eq.pricePerDay)}</div>
                             </div>
 
                             {inCart ? (
-                              <div className="flex items-center gap-1.5 bg-white border rounded-lg px-1 py-0.5">
+                              <div className="flex items-center gap-1.5 bg-slate-50 border rounded-lg px-1 py-0.5">
                                 <button
                                   onClick={() => {
                                     if (inCart.quantity === 1) removeFromCart(eq.id);
                                     else updateCartQty(eq.id, inCart.quantity - 1);
                                   }}
-                                  className="w-5 h-5 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded"
+                                  className="w-5 h-5 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-200 rounded cursor-pointer"
                                 >
                                   -
                                 </button>
                                 <span className="text-xs font-bold text-slate-800 w-4 text-center">{inCart.quantity}</span>
                                 <button
                                   onClick={() => updateCartQty(eq.id, inCart.quantity + 1)}
-                                  className="w-5 h-5 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded"
+                                  className="w-5 h-5 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-200 rounded cursor-pointer"
                                 >
                                   +
                                 </button>
@@ -599,10 +645,10 @@ export default function BookingPage() {
                               <button
                                 onClick={() => addToCart(eq)}
                                 disabled={eq.available <= 0}
-                                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors ${
+                                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
                                   eq.available <= 0
                                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                                    : "bg-orange-500 hover:bg-orange-600 text-white shadow-xs"
                                 }`}
                               >
                                 {eq.available <= 0 ? "Stok Habis" : "+ Tambah"}
@@ -886,9 +932,19 @@ export default function BookingPage() {
                       <h3 className="text-base font-bold text-slate-950 mt-1">Daftar Peralatan yang Disewa:</h3>
                       <div className="space-y-2 mt-3">
                         {cart.map((entry) => (
-                          <div key={entry.equipment.id} className="flex justify-between items-center text-xs">
-                            <span className="text-slate-700">{entry.equipment.name} <strong className="text-slate-900">x{entry.quantity}</strong></span>
-                            <span className="font-medium text-slate-900">{formatIDR(entry.equipment.pricePerDay * entry.quantity)} / hari</span>
+                          <div key={entry.equipment.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                            <div className="flex items-center gap-3">
+                              {entry.equipment.image ? (
+                                <img src={entry.equipment.image} alt={entry.equipment.name} className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 bg-slate-100 rounded-lg shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">📷</div>
+                              )}
+                              <div>
+                                <span className="font-bold text-slate-900 block">{entry.equipment.name}</span>
+                                <span className="text-slate-500 text-[11px]">{entry.equipment.brand} • {entry.quantity} unit</span>
+                              </div>
+                            </div>
+                            <span className="font-bold text-slate-900">{formatIDR(entry.equipment.pricePerDay * entry.quantity)} / hari</span>
                           </div>
                         ))}
                       </div>
