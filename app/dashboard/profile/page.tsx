@@ -32,42 +32,30 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 120;
-        const MAX_HEIGHT = 120;
-        let width = img.width;
-        let height = img.height;
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append("file", file);
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-        setAvatar(dataUrl);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setAvatar(data.url);
+      }
+    } catch (err) {
+      console.error("Gagal mengunggah foto profil:", err);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {

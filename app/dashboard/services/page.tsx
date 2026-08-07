@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   priceStart: 0,
   duration: "",
   includes: "",    // comma-separated string in form
+  image: "",
   isActive: true,
 };
 
@@ -34,6 +35,39 @@ function ServiceModal({ title, onClose, onSave, initial = {} }: ModalProps) {
 
   const set = (k: keyof FormData, v: string | number | boolean) =>
     setForm(prev => ({ ...prev, [k]: v }));
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal mengunggah berkas");
+      }
+
+      set("image", data.url);
+    } catch (err: any) {
+      console.error(err);
+      setUploadError(err.message || "Gagal mengunggah berkas");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +121,24 @@ function ServiceModal({ title, onClose, onSave, initial = {} }: ModalProps) {
               placeholder="Pisahkan dengan koma, contoh: Editing profesional, File resolusi tinggi, 20 foto final"
             />
             <p className="text-xs text-slate-400 mt-1">Pisahkan setiap item dengan koma (,)</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Foto Layanan (Unggah Berkas / URL)</label>
+            <div className="flex gap-2 mb-2">
+              <input className="input-modern flex-1" value={form.image} onChange={e => set("image", e.target.value)} placeholder="Contoh: /uploads/... atau URL Unsplash" />
+              <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer border border-slate-200 shrink-0">
+                <span>📷 Upload</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+              </label>
+            </div>
+            {uploading && <p className="text-xs text-blue-600 font-mono animate-pulse">Mengunggah foto layanan...</p>}
+            {uploadError && <p className="text-xs text-rose-600 font-mono">{uploadError}</p>}
+            {form.image && (
+              <div className="mt-2.5 relative w-full h-32 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -149,6 +201,7 @@ export default function ManageServicesPage() {
     priceStart: s.priceStart,
     duration: s.duration || "",
     includes: s.includes.join(", "),
+    image: s.image || "",
     isActive: s.isActive,
   });
 
