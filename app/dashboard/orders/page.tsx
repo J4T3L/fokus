@@ -9,6 +9,7 @@ import PaymentSimulator from "@/app/components/PaymentSimulator";
 import ReviewModal from "@/app/components/ReviewModal";
 import CancelModal from "@/app/components/CancelModal";
 import RescheduleModal from "@/app/components/RescheduleModal";
+import FormDetailModal from "@/app/components/FormDetailModal";
 
 export default function OrdersPage() {
   const { user, isAuthenticated } = useAuth();
@@ -337,13 +338,21 @@ export default function OrdersPage() {
                             </div>
                           )}
 
-                          <div>
+                          <div className="flex flex-col items-end gap-1 mt-1">
+                            {isAdmin && (o.cancelRequest || o.rescheduleRequest) && (
+                              <button
+                                onClick={() => setDetailModalOrder(o)}
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                🔍 Lihat Detail Form
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setSelectedInvoiceId(o.id);
                                 setIsInvoiceOpen(true);
                               }}
-                              className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 hover:text-orange-700 transition-colors cursor-pointer mt-1"
+                              className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 hover:text-orange-700 transition-colors cursor-pointer"
                             >
                               Lihat Invoice
                             </button>
@@ -405,6 +414,17 @@ export default function OrdersPage() {
         }}
         orderId={rescheduleOrderId}
         onSuccess={fetchOrders}
+      />
+
+      <FormDetailModal
+        order={detailModalOrder}
+        isOpen={!!detailModalOrder}
+        onClose={() => setDetailModalOrder(null)}
+        onAdminAction={async (id, action) => {
+          await handleAdminAction(id, action);
+          setDetailModalOrder(null);
+        }}
+        loadingAction={!!updatingActionId}
       />
     </>
   );

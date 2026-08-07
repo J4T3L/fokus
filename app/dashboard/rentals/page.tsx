@@ -4,6 +4,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import FormDetailModal from "@/app/components/FormDetailModal";
 
 interface RentalItem {
   id: string;
@@ -77,6 +78,7 @@ export default function RentalMonitoringPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [selectedRental, setSelectedRental] = useState<RentalRecord | null>(null);
+  const [detailFormRecord, setDetailFormRecord] = useState<RentalRecord | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
@@ -547,6 +549,14 @@ export default function RentalMonitoringPage() {
                           </>
                         )}
 
+                        {(record.cancelRequest || record.rescheduleRequest) && (
+                          <button
+                            onClick={() => setDetailFormRecord(record)}
+                            className="block px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[10px] font-bold transition-colors ml-auto cursor-pointer"
+                          >
+                            🔍 Detail Form Request
+                          </button>
+                        )}
                         <button
                           onClick={() => setSelectedRental(record)}
                           className="block text-slate-500 hover:text-slate-800 text-[10px] underline font-medium ml-auto mt-1 cursor-pointer"
@@ -621,6 +631,27 @@ export default function RentalMonitoringPage() {
           </div>
         </div>
       )}
+
+      {/* Form Detail Modal */}
+      <FormDetailModal
+        order={detailFormRecord ? {
+          id: detailFormRecord.orderNumber,
+          user: detailFormRecord.borrower.name,
+          amount: formatIDR(detailFormRecord.totalAmount),
+          itemStr: detailFormRecord.items.map(i => i.equipment?.name).filter(Boolean).join(", "),
+          cancelRequest: detailFormRecord.cancelRequest,
+          rescheduleRequest: detailFormRecord.rescheduleRequest,
+        } : null}
+        isOpen={!!detailFormRecord}
+        onClose={() => setDetailFormRecord(null)}
+        onAdminAction={async (id, action) => {
+          if (detailFormRecord) {
+            await handleAction(detailFormRecord.id, action);
+          }
+          setDetailFormRecord(null);
+        }}
+        loadingAction={!!updatingId}
+      />
     </div>
   );
 }
