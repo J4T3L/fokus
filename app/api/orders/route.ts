@@ -27,30 +27,46 @@ export async function GET(request: Request) {
 
     const orders = (await prisma.order.findMany(queryInfo)) as any[];
 
-    const mappedOrders = orders.map((o) => ({
-      id: o.orderNumber,
-      dbId: o.id,
-      user: o.user.name,
-      amount: "Rp " + o.totalAmount.toLocaleString("id-ID"),
-      rawAmount: o.totalAmount,
-      status: o.status === "PENDING" ? "Menunggu Pembayaran" : 
-              o.status === "PROCESSING" ? "Diproses" : 
-              o.status === "ACTIVE" ? "Aktif" : 
-              o.status === "COMPLETED" ? "Selesai" : 
-              o.status === "CANCELLED" ? "Dibatalkan" : "Menunggu",
-      date: o.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-      itemStr: o.items.length > 0 
-        ? (o.items.length > 1 
-            ? `${o.items.length} item dipesan` 
-            : o.items[0].equipment 
-              ? `Sewa ${o.items[0].equipment.name}` 
-              : o.items[0].service 
-                ? `Jasa ${o.items[0].service.name}` 
-                : "Pesanan Layanan/Sewa") 
-        : "Detail",
-      userId: o.userId,
-      createdAt: o.createdAt,
-    }));
+    const mappedOrders = orders.map((o) => {
+      let parsedNotes: any = null;
+      try {
+        if (o.notes && o.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(o.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
+      return {
+        id: o.orderNumber,
+        dbId: o.id,
+        user: o.user.name,
+        amount: "Rp " + o.totalAmount.toLocaleString("id-ID"),
+        rawAmount: o.totalAmount,
+        status: o.status === "PENDING" ? "Menunggu Pembayaran" : 
+                o.status === "PROCESSING" ? "Diproses" : 
+                o.status === "ACTIVE" ? "Aktif" : 
+                o.status === "COMPLETED" ? "Selesai" : 
+                o.status === "CANCELLED" ? "Dibatalkan" : "Menunggu",
+        date: o.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        itemStr: o.items.length > 0 
+          ? (o.items.length > 1 
+              ? `${o.items.length} item dipesan` 
+              : o.items[0].equipment 
+                ? `Sewa ${o.items[0].equipment.name}` 
+                : o.items[0].service 
+                  ? `Jasa ${o.items[0].service.name}` 
+                  : "Pesanan Layanan/Sewa") 
+          : "Detail",
+        userId: o.userId,
+        createdAt: o.createdAt,
+        startDate: o.startDate,
+        endDate: o.endDate,
+        notes: o.notes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
+      };
+    });
 
     // Retrieve StudioBookings as well to combine in history
     const bookingsQuery: any = {
@@ -67,22 +83,38 @@ export async function GET(request: Request) {
 
     const bookings = (await prisma.studioBooking.findMany(bookingsQuery)) as any[];
 
-    const mappedBookings = bookings.map((b) => ({
-      id: `STB-${b.id.slice(-8).toUpperCase()}`,
-      dbId: b.id,
-      user: b.user.name,
-      amount: "Rp " + b.totalPrice.toLocaleString("id-ID"),
-      rawAmount: b.totalPrice,
-      status: b.status === "PENDING" ? "Menunggu Pembayaran" : 
-              b.status === "CONFIRMED" ? "Diproses" : 
-              b.status === "IN_USE" ? "Aktif" : 
-              b.status === "COMPLETED" ? "Selesai" : 
-              b.status === "CANCELLED" ? "Dibatalkan" : "Menunggu",
-      date: b.date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-      itemStr: `Sewa ${b.studio.name} (${b.duration} jam) - ${b.startTime} sd ${b.endTime}`,
-      userId: b.userId,
-      createdAt: b.createdAt,
-    }));
+    const mappedBookings = bookings.map((b) => {
+      let parsedNotes: any = null;
+      try {
+        if (b.notes && b.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(b.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
+      return {
+        id: `STB-${b.id.slice(-8).toUpperCase()}`,
+        dbId: b.id,
+        user: b.user.name,
+        amount: "Rp " + b.totalPrice.toLocaleString("id-ID"),
+        rawAmount: b.totalPrice,
+        status: b.status === "PENDING" ? "Menunggu Pembayaran" : 
+                b.status === "CONFIRMED" ? "Diproses" : 
+                b.status === "IN_USE" ? "Aktif" : 
+                b.status === "COMPLETED" ? "Selesai" : 
+                b.status === "CANCELLED" ? "Dibatalkan" : "Menunggu",
+        date: b.date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        itemStr: `Sewa ${b.studio.name} (${b.duration} jam) - ${b.startTime} sd ${b.endTime}`,
+        userId: b.userId,
+        createdAt: b.createdAt,
+        startDate: b.date,
+        endDate: b.date,
+        notes: b.notes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
+      };
+    });
 
     const combined = [...mappedOrders, ...mappedBookings].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

@@ -59,6 +59,15 @@ export async function GET(request: Request) {
       const diffMs = endDate.getTime() - now.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
+      let parsedNotes: any = null;
+      try {
+        if (order.notes && order.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(order.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
       return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -68,6 +77,8 @@ export async function GET(request: Request) {
         status: order.status, // PENDING | PROCESSING | ACTIVE | COMPLETED | CANCELLED
         totalAmount: order.totalAmount,
         notes: order.notes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
         borrower: {
           id: order.user.id,
           name: order.user.name,

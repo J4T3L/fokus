@@ -40,6 +40,8 @@ interface RentalRecord {
   status: "PENDING" | "PROCESSING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   totalAmount: number;
   notes?: string;
+  cancelRequest?: any;
+  rescheduleRequest?: any;
   borrower: Borrower;
   items: RentalItem[];
   paymentStatus: string;
@@ -129,6 +131,25 @@ export default function RentalMonitoringPage() {
       }
     } catch (e) {
       console.error("Error updating rental status:", e);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleAction = async (rentalId: string, actionName: string) => {
+    try {
+      setUpdatingId(rentalId);
+      const res = await fetch(`/api/orders/${rentalId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: actionName }),
+      });
+
+      if (res.ok) {
+        await fetchRentals();
+      }
+    } catch (e) {
+      console.error("Error running action:", e);
     } finally {
       setUpdatingId(null);
     }
@@ -413,40 +434,70 @@ export default function RentalMonitoringPage() {
 
                       {/* Quick Actions */}
                       <td className="px-5 py-4 align-top text-right space-y-1.5">
-                        {record.status === "PROCESSING" && (
-                          <button
-                            disabled={isUpdating}
-                            onClick={() => handleUpdateStatus(record.id, "ACTIVE")}
-                            className="w-full sm:w-auto px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                          >
-                            {isUpdating ? "Memproses..." : "📦 Serahkan Barang (Aktifkan)"}
-                          </button>
-                        )}
+                        {record.cancelRequest?.status === "PENDING_ACC" ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                              🚨 Ada Pengajuan Batal
+                            </span>
+                            <button
+                              disabled={isUpdating}
+                              onClick={() => handleAction(record.id, "ACC_CANCEL")}
+                              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold cursor-pointer"
+                            >
+                              ✓ ACC Pembatalan
+                            </button>
+                          </div>
+                        ) : record.rescheduleRequest?.status === "PENDING_ACC" ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                              📅 Ada Reschedule
+                            </span>
+                            <button
+                              disabled={isUpdating}
+                              onClick={() => handleAction(record.id, "ACC_RESCHEDULE")}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold cursor-pointer"
+                            >
+                              ✓ ACC Reschedule
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            {record.status === "PROCESSING" && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleUpdateStatus(record.id, "ACTIVE")}
+                                className="w-full sm:w-auto px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                              >
+                                {isUpdating ? "Memproses..." : "📦 Serahkan Barang (Aktifkan)"}
+                              </button>
+                            )}
 
-                        {record.status === "ACTIVE" && (
-                          <button
-                            disabled={isUpdating}
-                            onClick={() => handleUpdateStatus(record.id, "COMPLETED")}
-                            className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                          >
-                            {isUpdating ? "Memproses..." : "✅ Terima Pengembalian"}
-                          </button>
-                        )}
+                            {record.status === "ACTIVE" && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleUpdateStatus(record.id, "COMPLETED")}
+                                className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                              >
+                                {isUpdating ? "Memproses..." : "✅ Terima Pengembalian"}
+                              </button>
+                            )}
 
-                        {(record.status === "PROCESSING" || record.status === "PENDING") && (
-                          <button
-                            disabled={isUpdating}
-                            onClick={() => handleUpdateStatus(record.id, "CANCELLED")}
-                            className="block w-full sm:w-auto ml-auto px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer"
-                          >
-                            Batalkan Sewa
-                          </button>
-                        )}
+                            {(record.status === "PROCESSING" || record.status === "PENDING") && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleUpdateStatus(record.id, "CANCELLED")}
+                                className="block w-full sm:w-auto ml-auto px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer"
+                              >
+                                Batalkan Sewa
+                              </button>
+                            )}
 
-                        {record.status === "COMPLETED" && (
-                          <span className="text-slate-400 text-[11px] font-semibold italic">
-                            Transaksi Selesai
-                          </span>
+                            {record.status === "COMPLETED" && (
+                              <span className="text-slate-400 text-[11px] font-semibold italic">
+                                Transaksi Selesai
+                              </span>
+                            )}
+                          </>
                         )}
 
                         <button

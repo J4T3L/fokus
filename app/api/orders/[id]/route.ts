@@ -17,8 +17,8 @@ export async function GET(
         user: { select: { name: true, email: true, phone: true, address: true } },
         items: {
           include: {
-            equipment: { select: { name: true, brand: true } },
-            service: { select: { name: true } },
+            equipment: { select: { name: true, brand: true, image: true } },
+            service: { select: { name: true, image: true } },
           },
         },
       },
@@ -32,8 +32,8 @@ export async function GET(
           user: { select: { name: true, email: true, phone: true, address: true } },
           items: {
             include: {
-              equipment: { select: { name: true, brand: true } },
-              service: { select: { name: true } },
+              equipment: { select: { name: true, brand: true, image: true } },
+              service: { select: { name: true, image: true } },
             },
           },
         },
@@ -52,6 +52,15 @@ export async function GET(
         type: item.equipment ? "equipment" : "service",
       }));
 
+      let parsedNotes: any = null;
+      try {
+        if (order.notes && order.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(order.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
       return NextResponse.json({
         type: "order",
         id: order.orderNumber,
@@ -60,6 +69,9 @@ export async function GET(
         status: order.status,
         totalAmount: order.totalAmount,
         notes: order.notes,
+        parsedNotes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
         startDate: order.startDate,
         endDate: order.endDate,
         user: order.user,
@@ -72,7 +84,7 @@ export async function GET(
       where: { id: id },
       include: {
         user: { select: { name: true, email: true, phone: true, address: true } },
-        studio: { select: { name: true, pricePerHour: true } },
+        studio: { select: { name: true, pricePerHour: true, image: true } },
       },
     });
 
@@ -82,10 +94,10 @@ export async function GET(
       const bookings = await prisma.studioBooking.findMany({
         include: {
           user: { select: { name: true, email: true, phone: true, address: true } },
-          studio: { select: { name: true, pricePerHour: true } },
+          studio: { select: { name: true, pricePerHour: true, image: true } },
         },
       });
-      booking = bookings.find(b => b.id.slice(-8).toLowerCase() === suffix) || null;
+      booking = bookings.find((b) => b.id.slice(-8).toLowerCase() === suffix) || null;
     }
 
     if (booking) {
@@ -101,6 +113,15 @@ export async function GET(
         },
       ];
 
+      let parsedNotes: any = null;
+      try {
+        if (booking.notes && booking.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(booking.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
       return NextResponse.json({
         type: "booking",
         id: `STB-${booking.id.slice(-8).toUpperCase()}`,
@@ -109,6 +130,9 @@ export async function GET(
         status: booking.status,
         totalAmount: booking.totalPrice,
         notes: booking.notes,
+        parsedNotes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
         startDate: booking.date,
         endDate: booking.date,
         user: booking.user,
@@ -130,18 +154,13 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status, action } = body;
 
-    if (!status) {
-      return NextResponse.json({ error: "Status is required" }, { status: 400 });
-    }
-
-    // 1. Try to find if this is an Order by orderNumber
+    // 1. Try to find if this is an Order by orderNumber or ID
     let order = await prisma.order.findUnique({
       where: { orderNumber: id },
     });
 
-    // 2. Try to find if this is an Order by ID
     if (!order) {
       order = await prisma.order.findUnique({
         where: { id: id },
@@ -149,18 +168,66 @@ export async function PUT(
     }
 
     if (order) {
-      // Map frontend status string to OrderStatus enum
-      let prismaStatus: OrderStatus = "PENDING";
-      const s = status.toLowerCase();
-      if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
-      else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed") || s.includes("processing")) prismaStatus = "PROCESSING";
-      else if (s.includes("aktif") || s.includes("active")) prismaStatus = "ACTIVE";
-      else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
-      else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
+      let updateData: any = {};
+      let parsedNotes: any = {};
+      try {
+        if (order.notes && order.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(order.notes);
+        } else {
+          parsedNotes = { userNotes: order.notes || "" };
+        }
+      } catch {
+        parsedNotes = { userNotes: order.notes || "" };
+      }
+
+      // Handle specific action approvals
+      if (action === "ACC_CANCEL") {
+        updateData.status = "CANCELLED";
+        if (parsedNotes.cancelRequest) {
+          parsedNotes.cancelRequest.status = "APPROVED";
+          parsedNotes.cancelRequest.approvedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (action === "REJECT_CANCEL") {
+        if (parsedNotes.cancelRequest) {
+          parsedNotes.cancelRequest.status = "REJECTED";
+          parsedNotes.cancelRequest.rejectedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (action === "ACC_RESCHEDULE") {
+        if (parsedNotes.rescheduleRequest) {
+          parsedNotes.rescheduleRequest.status = "APPROVED";
+          parsedNotes.rescheduleRequest.approvedAt = new Date().toISOString();
+          if (parsedNotes.rescheduleRequest.newStartDate) {
+            updateData.startDate = new Date(parsedNotes.rescheduleRequest.newStartDate);
+          }
+          if (parsedNotes.rescheduleRequest.newEndDate) {
+            updateData.endDate = new Date(parsedNotes.rescheduleRequest.newEndDate);
+          }
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+        if (order.status === "PENDING") updateData.status = "PROCESSING";
+      } else if (action === "REJECT_RESCHEDULE") {
+        if (parsedNotes.rescheduleRequest) {
+          parsedNotes.rescheduleRequest.status = "REJECTED";
+          parsedNotes.rescheduleRequest.rejectedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (status) {
+        // General status change
+        let prismaStatus: OrderStatus = "PENDING";
+        const s = status.toLowerCase();
+        if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
+        else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed") || s.includes("processing")) prismaStatus = "PROCESSING";
+        else if (s.includes("aktif") || s.includes("active")) prismaStatus = "ACTIVE";
+        else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
+        else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
+        updateData.status = prismaStatus;
+      }
 
       const updated = await prisma.order.update({
         where: { id: order.id },
-        data: { status: prismaStatus },
+        data: updateData,
       });
 
       try {
@@ -172,31 +239,79 @@ export async function PUT(
       return NextResponse.json(updated);
     }
 
-    // 3. Try to find if this is a StudioBooking by ID
+    // 2. Try to find if this is a StudioBooking by ID or suffix
     let booking = await prisma.studioBooking.findUnique({
       where: { id: id },
     });
 
-    // 4. Try to find if this is a StudioBooking by suffix (STB-xxxx)
     if (!booking && id.startsWith("STB-")) {
       const suffix = id.replace("STB-", "").toLowerCase();
       const bookings = await prisma.studioBooking.findMany();
-      booking = bookings.find(b => b.id.slice(-8).toLowerCase() === suffix) || null;
+      booking = bookings.find((b) => b.id.slice(-8).toLowerCase() === suffix) || null;
     }
 
     if (booking) {
-      // Map frontend status string to BookingStatus enum
-      let prismaStatus: BookingStatus = "PENDING";
-      const s = status.toLowerCase();
-      if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
-      else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed")) prismaStatus = "CONFIRMED";
-      else if (s.includes("aktif") || s.includes("active") || s.includes("use")) prismaStatus = "IN_USE";
-      else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
-      else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
+      let updateData: any = {};
+      let parsedNotes: any = {};
+      try {
+        if (booking.notes && booking.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(booking.notes);
+        } else {
+          parsedNotes = { userNotes: booking.notes || "" };
+        }
+      } catch {
+        parsedNotes = { userNotes: booking.notes || "" };
+      }
+
+      if (action === "ACC_CANCEL") {
+        updateData.status = "CANCELLED";
+        if (parsedNotes.cancelRequest) {
+          parsedNotes.cancelRequest.status = "APPROVED";
+          parsedNotes.cancelRequest.approvedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (action === "REJECT_CANCEL") {
+        if (parsedNotes.cancelRequest) {
+          parsedNotes.cancelRequest.status = "REJECTED";
+          parsedNotes.cancelRequest.rejectedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (action === "ACC_RESCHEDULE") {
+        if (parsedNotes.rescheduleRequest) {
+          parsedNotes.rescheduleRequest.status = "APPROVED";
+          parsedNotes.rescheduleRequest.approvedAt = new Date().toISOString();
+          if (parsedNotes.rescheduleRequest.newDate) {
+            updateData.date = new Date(parsedNotes.rescheduleRequest.newDate);
+          }
+          if (parsedNotes.rescheduleRequest.newStartTime) {
+            updateData.startTime = parsedNotes.rescheduleRequest.newStartTime;
+          }
+          if (parsedNotes.rescheduleRequest.newEndTime) {
+            updateData.endTime = parsedNotes.rescheduleRequest.newEndTime;
+          }
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+        if (booking.status === "PENDING") updateData.status = "CONFIRMED";
+      } else if (action === "REJECT_RESCHEDULE") {
+        if (parsedNotes.rescheduleRequest) {
+          parsedNotes.rescheduleRequest.status = "REJECTED";
+          parsedNotes.rescheduleRequest.rejectedAt = new Date().toISOString();
+        }
+        updateData.notes = JSON.stringify(parsedNotes);
+      } else if (status) {
+        let prismaStatus: BookingStatus = "PENDING";
+        const s = status.toLowerCase();
+        if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
+        else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed")) prismaStatus = "CONFIRMED";
+        else if (s.includes("aktif") || s.includes("active") || s.includes("use")) prismaStatus = "IN_USE";
+        else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
+        else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
+        updateData.status = prismaStatus;
+      }
 
       const updated = await prisma.studioBooking.update({
         where: { id: booking.id },
-        data: { status: prismaStatus },
+        data: updateData,
       });
 
       return NextResponse.json(updated);

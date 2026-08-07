@@ -1,4 +1,5 @@
 "use client";
+
 import { useAuth } from "@/app/context/AuthContext";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -6,6 +7,8 @@ import { useRouter } from "next/navigation";
 import InvoiceModal from "@/app/components/InvoiceModal";
 import PaymentSimulator from "@/app/components/PaymentSimulator";
 import ReviewModal from "@/app/components/ReviewModal";
+import CancelModal from "@/app/components/CancelModal";
+import RescheduleModal from "@/app/components/RescheduleModal";
 
 export default function OrdersPage() {
   const { user, isAuthenticated } = useAuth();
@@ -23,6 +26,14 @@ export default function OrdersPage() {
   // Review modal state
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
+  // Cancel & Reschedule modals
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+  const [rescheduleOrderId, setRescheduleOrderId] = useState<string | null>(null);
+  const [updatingActionId, setUpdatingActionId] = useState<string | null>(null);
+  const [detailModalOrder, setDetailModalOrder] = useState<any | null>(null);
+
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
 
   useEffect(() => {
@@ -31,12 +42,13 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
+      setLoading(true);
       const url = isAdmin ? "/api/orders" : `/api/orders?userId=${user?.id || ""}`;
       const res = await fetch(url);
       const data = await res.json();
       setOrders(data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading orders:", err);
     } finally {
       setLoading(false);
     }
@@ -57,123 +69,297 @@ export default function OrdersPage() {
 
   const handleAdminUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      // Optimistic update
-      setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
+      setOrders(orders.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
       await fetch(`/api/orders/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       });
+      fetchOrders();
     } catch (e) {
       console.error(e);
     }
   };
 
+  const handleAdminAction = async (id: string, actionName: string) => {
+    try {
+      setUpdatingActionId(id);
+      const res = await fetch(`/api/orders/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: actionName }),
+      });
+      if (res.ok) {
+        await fetchOrders();
+      }
+    } catch (err) {
+      console.error("Error processing approval action:", err);
+    } finally {
+      setUpdatingActionId(null);
+    }
+  };
+
   return (
     <>
-      <div className="animate-fade-up">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-            {isAdmin ? "Rekap Seluruh Pesanan" : "Riwayat Pesanan Saya"}
-          </h1>
-          <p className="text-slate-500 text-sm">
-            {isAdmin ? "Pantau dan perbarui status pesanan pelanggan secara manual." : "Daftar layanan yang pernah Anda pesan."}
-          </p>
+      <div className="animate-fade-up space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+              {isAdmin ? "Rekap & Manajemen Pesanan" : "Riwayat Pesanan Saya"}
+            </h1>
+            <p className="text-slate-500 text-sm">
+              {isAdmin
+                ? "Pantau pesanan, bukti transfer, dan konfirmasi pengajuan pembatalan/reschedule."
+                : "Daftar layanan yang Anda pesan, status pembayaran, dan pengajuan jadwal/batal."}
+            </p>
+          </div>
+          {!isAdmin && (
+            <Link href="/dashboard/booking" className="btn-primary px-4 py-2 text-sm shadow-sm">
+              Buat Pesanan Baru
+            </Link>
+          )}
         </div>
-        {!isAdmin && (
-          <Link href="/dashboard/booking" className="btn-primary px-4 py-2 text-sm shadow-sm">Buat Pesanan Baru</Link>
-        )}
-      </div>
 
-      <div className="modern-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">ID Pesanan</th>
-                {isAdmin && <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">Pelanggan</th>}
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">Layanan</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 text-right">Biaya / Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                 <tr><td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400">Sedang menyinkronkan data pesanan...</td></tr>
-              ) : orders.length === 0 ? (
-                 <tr><td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400">Tidak ada pesanan ditemukan.</td></tr>
-              ) : orders.map((o) => (
-                <tr key={o.id} className="hover:bg-slate-50/50 transition-colors bg-white">
-                  <td className="px-6 py-4 text-xs font-mono text-slate-500">{o.id}</td>
-                  {isAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-900">{o.user}</td>}
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-900 text-sm">{o.itemStr}</div>
-                    <div className="text-xs font-medium text-slate-400 mt-0.5">{o.date}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${
-                      o.status.includes("Selesai") ? "bg-slate-100 text-slate-600 border-slate-200" :
-                      o.status.includes("Menunggu") ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                      "bg-blue-50 text-blue-700 border-blue-200"
-                    }`}>
-                      {o.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex flex-col items-end gap-1.5">
-                      {!isAdmin && o.status === "Menunggu Pembayaran" ? (
-                        <button
-                          onClick={() => handleSimulatePayment(o.id, o.rawAmount || 0)}
-                          className="btn-primary py-1.5 px-3 text-xs shadow-sm shadow-blue-500/20 w-[120px] cursor-pointer"
-                        >
-                          Pay Now
-                        </button>
-                      ) : isAdmin ? (
-                        <select
-                          value={o.status}
-                          onChange={(e) => handleAdminUpdateStatus(o.id, e.target.value)}
-                          className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-md focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-1.5 cursor-pointer shadow-sm outline-none"
-                        >
-                          <option value="Menunggu Pembayaran">Menunggu</option>
-                          <option value="Diproses">Diproses</option>
-                          <option value="Aktif">Aktif</option>
-                          <option value="Selesai">Selesai</option>
-                          <option value="Dibatalkan">Dibatalkan</option>
-                        </select>
-                      ) : (
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="text-sm font-bold text-slate-900">{o.amount}</div>
-                          {o.status === "Selesai" && (
-                            <button
-                              onClick={() => setIsReviewOpen(true)}
-                              className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 mt-1 cursor-pointer"
-                            >
-                              ★ Beri Ulasan
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      
-                      <button
-                        onClick={() => {
-                          setSelectedInvoiceId(o.id);
-                          setIsInvoiceOpen(true);
-                        }}
-                        className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 hover:text-orange-700 transition-colors cursor-pointer mt-1"
-                      >
-                        Lihat Invoice
-                      </button>
-                    </div>
-                  </td>
+        <div className="modern-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    ID Pesanan
+                  </th>
+                  {isAdmin && (
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                      Pelanggan
+                    </th>
+                  )}
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    Layanan &amp; Jadwal
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    Status &amp; Pengajuan
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 text-right">
+                    Biaya / Aksi
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400">
+                      Sedang menyinkronkan data pesanan...
+                    </td>
+                  </tr>
+                ) : orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center text-slate-400">
+                      Tidak ada pesanan ditemukan.
+                    </td>
+                  </tr>
+                ) : (
+                  orders.map((o) => {
+                    const hasPendingCancel = o.cancelRequest?.status === "PENDING_ACC";
+                    const hasPendingReschedule = o.rescheduleRequest?.status === "PENDING_ACC";
+                    const isUpdating = updatingActionId === o.id;
+
+                    return (
+                      <tr key={o.id} className="hover:bg-slate-50/50 transition-colors bg-white">
+                        <td className="px-6 py-4 align-top text-xs font-mono font-bold text-slate-700">
+                          {o.id}
+                        </td>
+                        {isAdmin && (
+                          <td className="px-6 py-4 align-top text-sm font-bold text-slate-900">
+                            {o.user}
+                          </td>
+                        )}
+                        <td className="px-6 py-4 align-top">
+                          <div className="font-bold text-slate-900 text-sm">{o.itemStr}</div>
+                          <div className="text-xs font-medium text-slate-400 mt-0.5">{o.date}</div>
+                        </td>
+                        <td className="px-6 py-4 align-top space-y-2">
+                          <div>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${
+                                o.status.includes("Selesai")
+                                  ? "bg-slate-100 text-slate-600 border-slate-200"
+                                  : o.status.includes("Dibatalkan")
+                                  ? "bg-rose-100 text-rose-700 border-rose-200"
+                                  : o.status.includes("Menunggu")
+                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                  : "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}
+                            >
+                              {o.status}
+                            </span>
+                          </div>
+
+                          {/* Cancellation Request Badge / Details */}
+                          {hasPendingCancel && (
+                            <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-xs space-y-1">
+                              <span className="font-bold text-rose-700 block">
+                                🚨 Pengajuan Pembatalan (Refund)
+                              </span>
+                              <p className="text-slate-600 text-[11px]">
+                                Alasan: <span className="italic">"{o.cancelRequest.reason}"</span>
+                              </p>
+                              {isAdmin && (
+                                <div className="text-[11px] text-slate-700 space-y-0.5 pt-1 border-t border-rose-200/60 font-mono">
+                                  <p>🏦 Rekening: {o.cancelRequest.bankInfo}</p>
+                                  <p>📱 WA: {o.cancelRequest.whatsapp}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Reschedule Request Badge / Details */}
+                          {hasPendingReschedule && (
+                            <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-200 text-xs space-y-1">
+                              <span className="font-bold text-blue-700 block">
+                                📅 Pengajuan Reschedule
+                              </span>
+                              <p className="text-slate-700 text-[11px] font-mono">
+                                Tgl Baru: {o.rescheduleRequest.newStartDate}
+                                {o.rescheduleRequest.newStartTime && (
+                                  <> ({o.rescheduleRequest.newStartTime} - {o.rescheduleRequest.newEndTime})</>
+                                )}
+                              </p>
+                              <p className="text-slate-600 text-[11px]">
+                                Alasan: <span className="italic">"{o.rescheduleRequest.reason}"</span>
+                              </p>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 align-top text-right space-y-2">
+                          <div className="text-sm font-bold text-slate-900">{o.amount}</div>
+
+                          {/* ADMIN ACTIONS FOR CANCEL/RESCHEDULE */}
+                          {isAdmin && hasPendingCancel && (
+                            <div className="flex flex-col gap-1 items-end pt-1">
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleAdminAction(o.id, "ACC_CANCEL")}
+                                className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+                              >
+                                {isUpdating ? "Memproses..." : "✓ ACC Pembatalan (Kurangi Keuangan)"}
+                              </button>
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleAdminAction(o.id, "REJECT_CANCEL")}
+                                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                              >
+                                ✕ Tolak Pembatalan
+                              </button>
+                            </div>
+                          )}
+
+                          {isAdmin && hasPendingReschedule && !hasPendingCancel && (
+                            <div className="flex flex-col gap-1 items-end pt-1">
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleAdminAction(o.id, "ACC_RESCHEDULE")}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+                              >
+                                {isUpdating ? "Memproses..." : "✓ ACC Reschedule"}
+                              </button>
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleAdminAction(o.id, "REJECT_RESCHEDULE")}
+                                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                              >
+                                ✕ Tolak Reschedule
+                              </button>
+                            </div>
+                          )}
+
+                          {/* STANDARD ADMIN STATUS DROPDOWN */}
+                          {isAdmin && !hasPendingCancel && !hasPendingReschedule && (
+                            <select
+                              value={o.status}
+                              onChange={(e) => handleAdminUpdateStatus(o.id, e.target.value)}
+                              className="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-md focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-1.5 cursor-pointer shadow-sm outline-none ml-auto"
+                            >
+                              <option value="Menunggu Pembayaran">Menunggu</option>
+                              <option value="Diproses">Diproses</option>
+                              <option value="Aktif">Aktif</option>
+                              <option value="Selesai">Selesai</option>
+                              <option value="Dibatalkan">Dibatalkan</option>
+                            </select>
+                          )}
+
+                          {/* USER ACTIONS (PAYMENT, RESCHEDULE, CANCEL) */}
+                          {!isAdmin && (
+                            <div className="flex flex-col items-end gap-1.5 pt-1">
+                              {o.status === "Menunggu Pembayaran" && (
+                                <button
+                                  onClick={() => handleSimulatePayment(o.id, o.rawAmount || 0)}
+                                  className="btn-primary py-1.5 px-3 text-xs shadow-sm shadow-blue-500/20 w-[120px] cursor-pointer"
+                                >
+                                  Bayar Sekarang
+                                </button>
+                              )}
+
+                              {o.status !== "Dibatalkan" &&
+                                o.status !== "Selesai" &&
+                                !hasPendingCancel &&
+                                !hasPendingReschedule && (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setRescheduleOrderId(o.id);
+                                        setIsRescheduleOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                                    >
+                                      📅 Reschedule
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setCancelOrderId(o.id);
+                                        setIsCancelOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                                    >
+                                      ⚠️ Pembatalan
+                                    </button>
+                                  </div>
+                                )}
+
+                              {o.status === "Selesai" && (
+                                <button
+                                  onClick={() => setIsReviewOpen(true)}
+                                  className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                                >
+                                  ★ Beri Ulasan
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          <div>
+                            <button
+                              onClick={() => {
+                                setSelectedInvoiceId(o.id);
+                                setIsInvoiceOpen(true);
+                              }}
+                              className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 hover:text-orange-700 transition-colors cursor-pointer mt-1"
+                            >
+                              Lihat Invoice
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      </div>
 
+      {/* Modals */}
       <InvoiceModal
         id={selectedInvoiceId}
         isOpen={isInvoiceOpen}
@@ -199,6 +385,26 @@ export default function OrdersPage() {
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
         userId={user.id}
+      />
+
+      <CancelModal
+        isOpen={isCancelOpen}
+        onClose={() => {
+          setIsCancelOpen(false);
+          setCancelOrderId(null);
+        }}
+        orderId={cancelOrderId}
+        onSuccess={fetchOrders}
+      />
+
+      <RescheduleModal
+        isOpen={isRescheduleOpen}
+        onClose={() => {
+          setIsRescheduleOpen(false);
+          setRescheduleOrderId(null);
+        }}
+        orderId={rescheduleOrderId}
+        onSuccess={fetchOrders}
       />
     </>
   );
