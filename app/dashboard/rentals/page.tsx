@@ -34,15 +34,19 @@ interface Borrower {
 interface RentalRecord {
   id: string;
   orderNumber: string;
+  type?: "EQUIPMENT" | "STUDIO";
   createdAt: string;
   startDate: string;
   endDate: string;
+  startTime?: string;
+  endTime?: string;
   status: "PENDING" | "PROCESSING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   totalAmount: number;
   notes?: string;
   cancelRequest?: any;
   rescheduleRequest?: any;
   borrower: Borrower;
+  studio?: any;
   items: RentalItem[];
   paymentStatus: string;
   paymentMethod: string;
@@ -155,8 +159,13 @@ export default function RentalMonitoringPage() {
     }
   };
 
+  const [categoryTab, setCategoryTab] = useState<"ALL" | "EQUIPMENT" | "STUDIO">("ALL");
+
   // Metrics calculation
   const totalRentals = rentals.length;
+  const equipmentCount = rentals.filter((r) => r.type === "EQUIPMENT").length;
+  const studioCount = rentals.filter((r) => r.type === "STUDIO").length;
+
   const activeRentals = rentals.filter((r) => r.status === "ACTIVE").length;
   const processingRentals = rentals.filter((r) => r.status === "PROCESSING" || r.status === "PENDING").length;
   const overdueRentals = rentals.filter((r) => r.isOverdue).length;
@@ -164,6 +173,9 @@ export default function RentalMonitoringPage() {
 
   // Filter rentals for UI display
   const filteredRentals = rentals.filter((r) => {
+    const matchesCategory =
+      categoryTab === "ALL" ? true : r.type === categoryTab;
+
     const matchesTab =
       activeTab === "ALL"
         ? true
@@ -178,32 +190,67 @@ export default function RentalMonitoringPage() {
       r.borrower.name.toLowerCase().includes(query) ||
       r.borrower.email.toLowerCase().includes(query) ||
       r.borrower.phone.toLowerCase().includes(query) ||
+      (r.studio && r.studio.name.toLowerCase().includes(query)) ||
       r.items.some((i) => i.equipment?.name.toLowerCase().includes(query));
 
-    return matchesTab && matchesSearch;
+    return matchesCategory && matchesTab && matchesSearch;
   });
 
   return (
     <div className="animate-fade-up space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
-            Monitoring Sewa Equipment
+            Monitoring Sewa (Equipment &amp; Studio)
           </h1>
           <p className="text-slate-500 text-sm">
-            Pantau barang sewa yang sedang dipinjam, identitas peminjam, tenggat waktu pengembalian, dan ketersediaan stok.
+            Pantau sewa barang dan booking studio yang sedang aktif, identitas peminjam, tenggat waktu, dan stok.
           </p>
         </div>
-        <button
-          onClick={fetchRentals}
-          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-all"
-        >
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh Data
-        </button>
+
+        {/* Category Switcher Tabs */}
+        <div className="flex bg-slate-200/70 p-1 rounded-xl shrink-0 self-start md:self-auto">
+          <button
+            onClick={() => setCategoryTab("ALL")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              categoryTab === "ALL"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Semua ({totalRentals})
+          </button>
+          <button
+            onClick={() => setCategoryTab("EQUIPMENT")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              categoryTab === "EQUIPMENT"
+                ? "bg-white text-blue-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            📷 Equipment ({equipmentCount})
+          </button>
+          <button
+            onClick={() => setCategoryTab("STUDIO")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              categoryTab === "STUDIO"
+                ? "bg-white text-purple-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎙️ Studio ({studioCount})
+          </button>
+          <button
+            onClick={fetchRentals}
+            className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const statusFilter = searchParams.get("status");
     const search = searchParams.get("search")?.toLowerCase() || "";
 
-    // Fetch all orders that include equipment items
+    // 1. Fetch all equipment rental orders
     const orders = await prisma.order.findMany({
       where: {
         items: {
@@ -51,11 +51,9 @@ export async function GET(request: Request) {
         ? new Date(order.endDate)
         : new Date(startDate.getTime() + (order.items[0]?.duration || 1) * 86400000);
 
-      // Overdue calculation: active/processing and end date is past
       const isOverdue =
         (order.status === "ACTIVE" || order.status === "PROCESSING") && endDate < now;
 
-      // Calculate days remaining or days overdue
       const diffMs = endDate.getTime() - now.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -71,10 +69,11 @@ export async function GET(request: Request) {
       return {
         id: order.id,
         orderNumber: order.orderNumber,
+        type: "EQUIPMENT",
         createdAt: order.createdAt.toISOString(),
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: order.status, // PENDING | PROCESSING | ACTIVE | COMPLETED | CANCELLED
+        status: order.status,
         totalAmount: order.totalAmount,
         notes: order.notes,
         cancelRequest: parsedNotes?.cancelRequest || null,
@@ -107,33 +106,127 @@ export async function GET(request: Request) {
         })),
         paymentStatus: order.payments[0]?.status || "PENDING",
         paymentMethod: order.payments[0]?.method || "—",
+        studio: null,
         isOverdue,
         diffDays,
       };
     });
 
-    // Apply filtering if requested
-    let filtered = mappedRentals;
+    // 2. Fetch all Studio Bookings for Monitoring Studio
+    const studioBookings = await prisma.studioBooking.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            avatar: true,
+          },
+        },
+        studio: true,
+      },
+    });
+
+    const mappedStudios = studioBookings.map((sb) => {
+      let parsedNotes: any = null;
+      try {
+        if (sb.notes && sb.notes.startsWith("{")) {
+          parsedNotes = JSON.parse(sb.notes);
+        }
+      } catch {
+        parsedNotes = null;
+      }
+
+      const bookingDate = new Date(sb.date);
+      const isOverdue = (sb.status === "CONFIRMED" || sb.status === "IN_USE") && bookingDate < now;
+
+      return {
+        id: sb.id,
+        orderNumber: `STB-${sb.id.slice(-8).toUpperCase()}`,
+        type: "STUDIO",
+        createdAt: sb.createdAt.toISOString(),
+        startDate: sb.date.toISOString(),
+        endDate: sb.date.toISOString(),
+        startTime: sb.startTime,
+        endTime: sb.endTime,
+        duration: sb.duration,
+        status: sb.status === "CONFIRMED" ? "PROCESSING" :
+                sb.status === "IN_USE" ? "ACTIVE" :
+                sb.status === "COMPLETED" ? "COMPLETED" :
+                sb.status === "CANCELLED" ? "CANCELLED" : "PENDING",
+        rawStatus: sb.status,
+        totalAmount: sb.totalPrice,
+        notes: sb.notes,
+        cancelRequest: parsedNotes?.cancelRequest || null,
+        rescheduleRequest: parsedNotes?.rescheduleRequest || null,
+        borrower: {
+          id: sb.user.id,
+          name: sb.user.name,
+          email: sb.user.email,
+          phone: sb.user.phone || "—",
+          address: sb.user.address || "—",
+          avatar: sb.user.avatar,
+        },
+        studio: {
+          id: sb.studio.id,
+          name: sb.studio.name,
+          capacity: sb.studio.capacity,
+          pricePerHour: sb.studio.pricePerHour,
+          image: sb.studio.image,
+        },
+        items: [
+          {
+            id: sb.id,
+            quantity: 1,
+            duration: sb.duration,
+            price: sb.studio.pricePerHour,
+            subtotal: sb.totalPrice,
+            equipment: {
+              id: sb.studio.id,
+              name: `Sewa ${sb.studio.name} (${sb.startTime} - ${sb.endTime})`,
+              brand: "Ruang Studio",
+              type: "Studio",
+              image: sb.studio.image,
+              stock: 1,
+              available: sb.status === "IN_USE" ? 0 : 1,
+            },
+          },
+        ],
+        paymentStatus: sb.status === "CANCELLED" ? "CANCELLED" : "CONFIRMED",
+        paymentMethod: "VA / QRIS",
+        isOverdue,
+        diffDays: 0,
+      };
+    });
+
+    let combined = [...mappedRentals, ...mappedStudios].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     if (statusFilter && statusFilter !== "ALL") {
       if (statusFilter === "OVERDUE") {
-        filtered = filtered.filter((r) => r.isOverdue);
+        combined = combined.filter((r) => r.isOverdue);
       } else {
-        filtered = filtered.filter((r) => r.status === statusFilter);
+        combined = combined.filter((r) => r.status === statusFilter);
       }
     }
 
     if (search) {
-      filtered = filtered.filter(
+      combined = combined.filter(
         (r) =>
           r.orderNumber.toLowerCase().includes(search) ||
           r.borrower.name.toLowerCase().includes(search) ||
           r.borrower.email.toLowerCase().includes(search) ||
           r.borrower.phone.toLowerCase().includes(search) ||
+          (r.studio && r.studio.name.toLowerCase().includes(search)) ||
           r.items.some((i) => i.equipment?.name.toLowerCase().includes(search))
       );
     }
 
-    return NextResponse.json(filtered);
+    return NextResponse.json(combined);
   } catch (error) {
     console.error("Error fetching rental monitoring list:", error);
     return NextResponse.json(

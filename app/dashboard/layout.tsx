@@ -55,7 +55,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   // ─── Admin+ ───────────────
   {
-    label: "Monitoring Sewa",
+    label: "Monitoring Sewa (Alat/Studio)",
     href: "/dashboard/rentals",
     roles: ["admin", "superuser"],
     icon: (
@@ -115,7 +115,7 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: "Jadwal Studio",
+    label: "Jadwal & Monitoring Studio",
     href: "/dashboard/schedule",
     roles: ["admin", "superuser"],
     icon: (
