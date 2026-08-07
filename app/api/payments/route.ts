@@ -12,10 +12,12 @@ export async function GET() {
 
     const mapped = payments.map((p) => ({
       trxId: "TRX-" + p.id.slice(-8).toUpperCase(),
-      user: p.order.user.name,
+      orderNumber: p.order?.orderNumber || "—",
+      user: p.order?.user?.name || "Pelanggan",
       method: p.method,
       amount: "Rp " + p.amount.toLocaleString("id-ID"),
-      time: p.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute:"2-digit" }),
+      proofImage: p.proofImage || null,
+      time: p.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }),
       status: p.status === "CONFIRMED" ? "Settled" : 
               p.status === "REJECTED" ? "Failed" : 
               p.status === "PENDING" ? "Pending" : p.status,

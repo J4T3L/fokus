@@ -5,7 +5,7 @@ import { syncEquipmentStock } from "@/app/lib/equipmentStock";
 
 export async function POST(request: Request) {
   try {
-    const { id, paymentMethod, amount } = await request.json();
+    const { id, paymentMethod, amount, proofImage } = await request.json();
 
     if (!id || !paymentMethod || !amount) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
           amount: Number(amount),
           method: paymentMethod,
           status: "CONFIRMED",
+          proofImage: proofImage || null,
           confirmedAt: new Date(),
           orderId: order.id,
         },
