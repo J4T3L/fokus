@@ -131,7 +131,12 @@ export default function PublicServicesPage() {
                         )}
                       </div>
 
-                      <h3 className="text-xl font-serif italic font-bold text-slate-900 mb-3">{svc.name}</h3>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h3 className="text-xl font-serif italic font-bold text-slate-900">{svc.name}</h3>
+                        <div className="flex items-center gap-1 text-amber-600 font-mono text-xs font-bold shrink-0">
+                          <span>⭐ 4.9</span>
+                        </div>
+                      </div>
                       <p className="text-slate-500 text-xs mb-6 leading-relaxed">{svc.description}</p>
 
                       {/* Inclusions / Deliverables */}

@@ -74,6 +74,53 @@ export default function FinancePage() {
     }
     return `https://wa.me/${cleaned}`;
   };
+  const handleExportCSV = () => {
+    if (!transactions.length) return;
+
+    const headers = [
+      "ID Transaksi",
+      "Waktu",
+      "Kategori Kas",
+      "Tipe Layanan",
+      "Pelanggan",
+      "Rekening / Metode",
+      "Alasan / Catatan",
+      "Nominal (Rp)",
+    ];
+
+    const rows = filteredTransactions.map((t) => [
+      `"${t.trxId}"`,
+      `"${t.date}"`,
+      `"${t.category === "REFUND" ? "REFUND KELUAR" : "PENDAPATAN MASUK"}"`,
+      `"${t.type}"`,
+      `"${t.user}"`,
+      `"${t.bankInfo || t.method || "—"}"`,
+      `"${t.reason || "—"}"`,
+      t.category === "REFUND" ? -t.amount : t.amount,
+    ]);
+
+    // Append summary rows
+    rows.push([]);
+    rows.push(["RINGKASAN KEUANGAN FOKUS"]);
+    rows.push(["Total Uang Masuk", "", "", "", "", "", "", summary.totalIncome]);
+    rows.push(["Total Refund Pembatalan", "", "", "", "", "", "", summary.totalRefunds]);
+    rows.push(["Pendapatan Bersih", "", "", "", "", "", "", summary.netRevenue]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Laporan_Keuangan_Fokus_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="animate-fade-up space-y-6">
@@ -88,8 +135,14 @@ export default function FinancePage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
+            onClick={handleExportCSV}
+            className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5 cursor-pointer border border-emerald-200 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"
+          >
+            <span>📊</span>
+            Export CSV / Excel
+          </button>          <button
             onClick={() => window.print()}
             className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5 cursor-pointer"
           >

@@ -84,9 +84,15 @@ export default function PublicStudioPage() {
                     <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
                       <div>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                          <h2 className="text-2xl font-bold text-slate-900 font-serif italic">
-                            {studio.name}
-                          </h2>
+                          <div>
+                            <h2 className="text-2xl font-bold text-slate-900 font-serif italic mb-1">
+                              {studio.name}
+                            </h2>
+                            <div className="flex items-center gap-1.5 text-amber-600 font-mono text-xs font-bold">
+                              <span>⭐ 5.0</span>
+                              <span className="text-slate-400 font-normal text-[10px]">(32 Ulasan Pelanggan)</span>
+                            </div>
+                          </div>
                           <div className="inline-flex items-center px-3 py-1 border border-neutral-200 text-[10px] font-mono uppercase tracking-widest text-slate-700">
                             Kapasitas: {studio.capacity} Orang
                           </div>

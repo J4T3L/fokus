@@ -157,8 +157,15 @@ export default function PublicCatalogPage() {
                       {/* Card Body */}
                       <div className="pt-4 flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="text-[9px] text-slate-400 font-mono uppercase tracking-widest mb-1">
-                            {item.brand} &bull; {item.category}
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="text-[9px] text-slate-400 font-mono uppercase tracking-widest">
+                              {item.brand} &bull; {item.category}
+                            </div>
+                            <div className="flex items-center gap-1 text-amber-600 font-mono text-[10px] font-bold">
+                              <span>⭐</span>
+                              <span>4.9</span>
+                              <span className="text-slate-400 font-normal text-[9px]">(18)</span>
+                            </div>
                           </div>
                           <h3 className="text-base font-serif italic font-bold text-slate-900 line-clamp-1 mb-2" title={item.name}>
                             {item.name}

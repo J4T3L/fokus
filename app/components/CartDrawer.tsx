@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { useState } from "react";
+import { validatePromoCode } from "../lib/promo";
+
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +16,23 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { cart, removeFromCart, updateCartQty } = useAppData();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState("");
+
+  const handleApplyPromo = () => {
+    setPromoError("");
+    const subtotal = cart.reduce((sum, item) => sum + item.equipment.pricePerDay * item.quantity, 0);
+    const res = validatePromoCode(promoInput, subtotal);
+    if (!res.valid) {
+      setPromoError(res.message);
+      setAppliedPromo(null);
+    } else {
+      setAppliedPromo(res);
+      setPromoInput("");
+    }
+  };
 
   // Prevent scroll when drawer is open
   useEffect(() => {
@@ -143,18 +163,72 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
           {/* Footer Checkout Panel */}
           {cart.length > 0 && (
-            <div className="p-6 border-t border-neutral-100 bg-neutral-50/50">
-              <div className="flex justify-between items-baseline mb-4">
-                <span className="text-xs text-slate-500 font-mono uppercase tracking-wider">Estimasi Harga Sewa</span>
-                <div className="text-right">
-                  <span className="text-lg font-extrabold text-orange-700">{formatIDR(subtotalPerDay)}</span>
-                  <span className="text-[9px] text-slate-400 block font-mono mt-0.5">*Belum termasuk jumlah hari sewa</span>
+            <div className="p-6 border-t border-neutral-100 bg-neutral-50/50 space-y-3">
+              {/* Promo Code Input Box */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
+                  🎟️ Punya Kode Promo / Voucher?
+                </label>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Contoh: FOKUS10, PROMO50K"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                    className="flex-1 px-3 py-1.5 bg-white border border-neutral-300 text-xs font-mono tracking-wider focus:outline-hidden focus:border-orange-700"
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    className="px-3 py-1.5 bg-slate-900 text-white font-mono text-[10px] uppercase font-bold tracking-wider hover:bg-orange-700 transition-colors cursor-pointer"
+                  >
+                    Gunakan
+                  </button>
+                </div>
+                {promoError && (
+                  <p className="text-[10px] text-rose-600 font-mono">{promoError}</p>
+                )}
+                {appliedPromo && (
+                  <div className="flex justify-between items-center bg-emerald-50 border border-emerald-200 p-2 text-xs font-mono text-emerald-800">
+                    <div>
+                      <span className="font-bold block">✓ Kode "{appliedPromo.code}" Terpasang</span>
+                      <span className="text-[10px] text-emerald-600 block">{appliedPromo.description}</span>
+                    </div>
+                    <button
+                      onClick={() => setAppliedPromo(null)}
+                      className="text-rose-600 font-bold hover:underline text-[10px]"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Subtotal & Discount Calculation */}
+              <div className="space-y-1.5 pt-2 border-t border-neutral-200">
+                <div className="flex justify-between text-xs text-slate-500 font-mono">
+                  <span>Subtotal/hari</span>
+                  <span>{formatIDR(subtotalPerDay)}</span>
+                </div>
+                {appliedPromo && (
+                  <div className="flex justify-between text-xs font-mono text-emerald-700 font-bold">
+                    <span>Diskon Promo</span>
+                    <span>- {formatIDR(appliedPromo.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-baseline pt-1 border-t border-neutral-200">
+                  <span className="text-xs text-slate-900 font-bold font-mono uppercase tracking-wider">Total Estimasi</span>
+                  <div className="text-right">
+                    <span className="text-lg font-extrabold text-orange-700">
+                      {formatIDR(subtotalPerDay - (appliedPromo?.discountAmount || 0))}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block font-mono mt-0.5">*Belum termasuk durasi hari</span>
+                  </div>
                 </div>
               </div>
 
               <button 
                 onClick={handleCheckout}
-                className="w-full btn-primary text-xs py-3 px-4 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-neutral-900/10 hover:shadow-xl transition-shadow"
+                className="w-full btn-primary text-xs py-3 px-4 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-neutral-900/10 hover:shadow-xl transition-shadow mt-2"
               >
                 <span>Lanjutkan ke Penyewaan</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>

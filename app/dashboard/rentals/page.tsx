@@ -522,13 +522,35 @@ export default function RentalMonitoringPage() {
                             )}
 
                             {record.status === "ACTIVE" && (
-                              <button
-                                disabled={isUpdating}
-                                onClick={() => handleUpdateStatus(record.id, "COMPLETED")}
-                                className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                              >
-                                {isUpdating ? "Memproses..." : "✅ Terima Pengembalian"}
-                              </button>
+                              <div className="space-y-1 mt-1">
+                                <button
+                                  disabled={isUpdating}
+                                  onClick={() => handleUpdateStatus(record.id, "COMPLETED")}
+                                  className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                                >
+                                  {isUpdating ? "Memproses..." : "✅ Terima Pengembalian"}
+                                </button>
+                                {record.borrower.phone && (
+                                  <a
+                                    href={(() => {
+                                      let phone = record.borrower.phone || "";
+                                      let cleaned = phone.replace(/\D/g, "");
+                                      if (cleaned.startsWith("0")) cleaned = "62" + cleaned.slice(1);
+                                      const itemName = record.items.map(i => i.equipment?.name).filter(Boolean).join(", ") || "alat rental";
+                                      const endDateStr = new Date(record.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+                                      const msg = record.isOverdue
+                                        ? `Halo Kak ${record.borrower.name}, penyewaan ${itemName} di Fokus Studio telah TERLAMBAT ${Math.abs(record.diffDays)} hari (tgl kembali: ${endDateStr}). Mohon segera mengembalikan unit ke studio. Terima kasih! 🙏`
+                                        : `Halo Kak ${record.borrower.name}, pengingat penyewaan ${itemName} di Fokus Studio akan berakhir pada ${endDateStr}. Mohon dikembalikan tepat waktu. Terima kasih! 🙏`;
+                                      return `https://wa.me/${cleaned}?text=${encodeURIComponent(msg)}`;
+                                    })()}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg text-[10px] font-bold transition-colors ml-auto text-right w-fit"
+                                  >
+                                    💬 Ingatkan Peminjam (WA)
+                                  </a>
+                                )}
+                              </div>
                             )}
 
                             {(record.status === "PROCESSING" || record.status === "PENDING") && (
