@@ -224,12 +224,12 @@ function AdminView({ userRole }: { userRole: string }) {
     <div className="space-y-8 animate-fade-up">
       {/* 4 Clean Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-orange-700 border border-orange-750 text-white viewfinder-box p-6 rounded-none relative">
+        <div className="bg-white border border-neutral-200 viewfinder-box p-6 rounded-none relative">
           <div className="viewfinder-corners-bottom"></div>
-          <div className="text-[9px] font-mono font-bold text-orange-200 mb-1 uppercase tracking-widest">
+          <div className="text-[9px] font-mono font-bold text-slate-400 mb-1 uppercase tracking-widest">
             Total Pendapatan
           </div>
-          <div className="text-2xl font-bold font-serif italic">
+          <div className="text-2xl sm:text-3xl font-bold font-serif italic text-orange-700">
             {loading ? "..." : formatIDR(stats?.revenue || 0)}
           </div>
         </div>
