@@ -11,6 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    if (!proofImage && !paymentMethod.toUpperCase().includes("MIDTRANS")) {
+      return NextResponse.json({ error: "Wajib mengunggah foto bukti transfer" }, { status: 400 });
+    }
+
     // 1. Try to find if this is an Order (by orderNumber or ID)
     let order = await prisma.order.findUnique({
       where: { orderNumber: id },

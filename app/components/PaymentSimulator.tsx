@@ -121,13 +121,19 @@ export default function PaymentSimulator({
   };
 
   const handleSimulatePayment = async () => {
+    if (!proofImage) {
+      setUploadError("⚠️ WAJIB mengunggah foto bukti transfer / resi sebelum konfirmasi pembayaran!");
+      return;
+    }
+
     setLoading(true);
+    setUploadError(null);
     try {
       const payload = {
         id: orderId,
         paymentMethod: method === "QRIS" ? "QRIS" : `VA_${method}`,
         amount: totalAmount,
-        proofImage: proofImage || null,
+        proofImage: proofImage,
       };
 
       const res = await fetch("/api/payments/webhook", {
@@ -371,9 +377,14 @@ export default function PaymentSimulator({
 
                 {/* Proof Upload Form Section */}
                 <div className="mt-4 pt-3 border-t border-neutral-200">
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-slate-600 font-bold block mb-1.5">
-                    📷 Unggah Bukti Transfer / Resi Struk (Gambar)
-                  </span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-slate-700 font-extrabold flex items-center gap-1">
+                      📷 Unggah Bukti Transfer / Resi Struk
+                    </span>
+                    <span className="text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
+                      WAJIB *
+                    </span>
+                  </div>
 
                   {proofImage ? (
                     <div className="bg-white p-2.5 rounded-lg border border-emerald-300 flex items-center justify-between">
@@ -408,10 +419,14 @@ export default function PaymentSimulator({
                       />
                       <label
                         htmlFor="proof-image-upload"
-                        className="w-full flex items-center justify-center gap-2 p-2.5 bg-white border border-dashed border-neutral-300 hover:border-orange-500 rounded-lg text-xs text-slate-600 font-medium cursor-pointer transition-colors"
+                        className={`w-full flex items-center justify-center gap-2 p-3 bg-white border-2 border-dashed rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                          uploadError
+                            ? "border-rose-400 bg-rose-50/50 text-rose-700"
+                            : "border-neutral-300 hover:border-orange-500 text-slate-600"
+                        }`}
                       >
                         {uploadingProof ? (
-                          <span className="text-orange-600 font-mono text-[10px] flex items-center gap-1.5">
+                          <span className="text-orange-600 font-mono text-[10px] flex items-center gap-1.5 font-bold">
                             <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-orange-600 border-t-transparent rounded-full" />
                             Mengunggah foto resi...
                           </span>
@@ -422,7 +437,7 @@ export default function PaymentSimulator({
                               <circle cx="8.5" cy="8.5" r="1.5" />
                               <polyline points="21 15 16 10 5 21" />
                             </svg>
-                            <span className="font-mono text-[10px]">PILIH GAMBAR / FOTO STRUK TRANSFER</span>
+                            <span className="font-mono text-[10px] font-bold">KLIK DI SINI UNTUK UNGGAH FOTO BUKTI TRANSFER (WAJIB *)</span>
                           </>
                         )}
                       </label>
@@ -430,22 +445,30 @@ export default function PaymentSimulator({
                   )}
 
                   {uploadError && (
-                    <p className="text-[10px] text-rose-600 font-mono mt-1">{uploadError}</p>
+                    <p className="text-[10px] text-rose-600 font-mono font-bold mt-1.5 bg-rose-50 p-2 border border-rose-200 rounded">
+                      {uploadError}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Simulation Sandbox Block */}
               <div className="mt-4 pt-3 border-t border-neutral-200">
-                <div className="mb-2.5 p-2 bg-orange-50 border border-orange-200 text-[9px] font-mono text-orange-800 tracking-wide">
-                  ⚠️ <strong>SANDBOX SIMULATOR:</strong> Klik tombol hijau di bawah untuk memproses konfirmasi pembayaran dan bukti transfer.
-                </div>
                 <button
+                  disabled={loading}
                   onClick={handleSimulatePayment}
-                  className="w-full btn-primary bg-green-700 hover:bg-green-800 text-white font-mono text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-green-700/10"
+                  className={`w-full font-mono text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all rounded-lg ${
+                    proofImage
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                      : "bg-slate-300 hover:bg-slate-400 text-slate-700 font-bold"
+                  }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  {proofImage ? "Kirim Bukti Transfer & Konfirmasi" : "Bayar Sekarang (Simulasi)"}
+                  {loading
+                    ? "Memproses Pembayaran..."
+                    : proofImage
+                    ? "✓ Kirim Bukti Transfer & Konfirmasi Pembayaran"
+                    : "⚠️ Unggah Bukti Transfer Dahulu Untuk Konfirmasi"}
                 </button>
               </div>
 
