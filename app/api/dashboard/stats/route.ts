@@ -57,7 +57,91 @@ export async function GET() {
       where: { role: "USER" },
     });
 
-    // 5. System Logs (generated dynamically from database records)
+    // 5. Active Rentals Preview (Equipment & Studio)
+    const activeOrdersList = await prisma.order.findMany({
+      where: {
+        status: { in: ["PROCESSING", "ACTIVE"] }
+      },
+      take: 5,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        user: { select: { name: true, phone: true } },
+        items: {
+          include: {
+            equipment: { select: { name: true, brand: true, image: true } }
+          }
+        }
+      }
+    });
+
+    const activeBookingsList = await prisma.studioBooking.findMany({
+      where: {
+        status: { in: ["CONFIRMED", "IN_USE"] }
+      },
+      take: 5,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        user: { select: { name: true, phone: true } },
+        studio: { select: { name: true, image: true } }
+      }
+    });
+
+    const activeRentalsPreview: any[] = [];
+
+    activeOrdersList.forEach((o) => {
+      const itemNames = o.items.map(i => i.equipment?.name).filter(Boolean).join(", ") || "Alat Rental";
+      activeRentalsPreview.push({
+        id: o.orderNumber,
+        category: "Equipment",
+        borrower: o.user.name,
+        phone: o.user.phone || "—",
+        item: itemNames,
+        startDate: o.startDate ? o.startDate.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "—",
+        endDate: o.endDate ? o.endDate.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "—",
+        status: o.status === "ACTIVE" ? "Dipinjam" : "Menunggu Pickup",
+        amount: o.totalAmount
+      });
+    });
+
+    activeBookingsList.forEach((b) => {
+      activeRentalsPreview.push({
+        id: `STB-${b.id.slice(-6).toUpperCase()}`,
+        category: "Studio",
+        borrower: b.user.name,
+        phone: b.user.phone || "—",
+        item: `Studio ${b.studio.name}`,
+        startDate: b.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+        endDate: `${b.startTime} - ${b.endTime}`,
+        status: b.status === "IN_USE" ? "Sesi Berlangsung" : "Terjadwal",
+        amount: b.totalPrice
+      });
+    });
+
+    // 6. Recent Payments Preview (with proof image)
+    const recentPayments = await prisma.payment.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        order: {
+          include: {
+            user: { select: { name: true } }
+          }
+        }
+      }
+    });
+
+    const paymentsPreview = recentPayments.map((p) => ({
+      id: p.id,
+      orderNumber: p.order.orderNumber,
+      user: p.order.user.name,
+      amount: p.amount,
+      method: p.method,
+      status: p.status,
+      proofImage: p.proofImage,
+      date: p.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+    }));
+
+    // 7. System Logs
     const recentOrders = await prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
@@ -114,7 +198,7 @@ export async function GET() {
       .slice(0, 8)
       .map(({ id, time, action }) => ({ id, time, action }));
 
-    // Fetch past 6 months of orders & bookings to calculate monthly earnings
+    // 8. Monthly Earnings calculation
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -190,7 +274,6 @@ export async function GET() {
       });
     });
 
-    // Sort descending by rawDate
     transactionsList.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
     const stats = {
@@ -198,6 +281,8 @@ export async function GET() {
       pendingOrders,
       activeOrders,
       newCustomers,
+      activeRentalsPreview,
+      paymentsPreview,
       systemLogs: sortedLogs.length > 0 ? sortedLogs : [
         { id: "log-default", time: "09:00", action: "Sistem Fokus Studio berjalan normal." }
       ],
