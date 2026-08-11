@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!proofImage && !paymentMethod.toUpperCase().includes("MIDTRANS")) {
+    if (!proofImage && !paymentMethod.toUpperCase().includes("MIDTRANS") && !paymentMethod.toUpperCase().includes("CASH")) {
       return NextResponse.json({ error: "Wajib mengunggah foto bukti transfer" }, { status: 400 });
     }
 

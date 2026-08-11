@@ -16,7 +16,7 @@ export default function PaymentSimulator({
   totalAmount,
   onSuccess,
 }: PaymentSimulatorProps) {
-  const [method, setMethod] = useState<"BCA" | "MANDIRI" | "QRIS" | null>(null);
+  const [method, setMethod] = useState<"BCA" | "MANDIRI" | "QRIS" | "TUNAI" | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -121,7 +121,7 @@ export default function PaymentSimulator({
   };
 
   const handleSimulatePayment = async () => {
-    if (!proofImage) {
+    if (!proofImage && method !== "TUNAI") {
       setUploadError("⚠️ WAJIB mengunggah foto bukti transfer / resi sebelum konfirmasi pembayaran!");
       return;
     }
@@ -131,9 +131,9 @@ export default function PaymentSimulator({
     try {
       const payload = {
         id: orderId,
-        paymentMethod: method === "QRIS" ? "QRIS" : `VA_${method}`,
+        paymentMethod: method === "TUNAI" ? "CASH_STUDIO" : method === "QRIS" ? "QRIS" : `VA_${method}`,
         amount: totalAmount,
-        proofImage: proofImage,
+        proofImage: proofImage || null,
       };
 
       const res = await fetch("/api/payments/webhook", {
@@ -309,6 +309,18 @@ export default function PaymentSimulator({
                     <span className="text-slate-350 group-hover:text-slate-800 text-xs transition-colors">&rarr;</span>
                   </button>
 
+                  {/* Tunai (Cash) */}
+                  <button 
+                    onClick={() => setMethod("TUNAI")}
+                    className="w-full flex items-center justify-between p-3.5 bg-emerald-50/60 border border-emerald-200 hover:border-emerald-700 transition-colors text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-6 bg-emerald-700 text-white flex items-center justify-center text-[10px] font-extrabold border font-mono">CASH</div>
+                      <span className="text-xs font-bold text-emerald-950">💵 Bayar Tunai di Studio (Cash)</span>
+                    </div>
+                    <span className="text-emerald-600 group-hover:translate-x-1 transition-transform text-xs">&rarr;</span>
+                  </button>
+
                 </div>
               </div>
 
@@ -328,10 +340,27 @@ export default function PaymentSimulator({
                     &larr; Kembali
                   </button>
                   <span className="text-slate-300">|</span>
-                  <span className="text-[10px] font-bold text-slate-800 font-mono uppercase tracking-wider">{method === "QRIS" ? "Pembayaran QRIS" : `${method} Virtual Account`}</span>
+                  <span className="text-[10px] font-bold text-slate-800 font-mono uppercase tracking-wider">
+                    {method === "TUNAI" ? "💵 Bayar Tunai (Cash di Studio)" : method === "QRIS" ? "Pembayaran QRIS" : `${method} Virtual Account`}
+                  </span>
                 </div>
 
-                {method === "QRIS" ? (
+                {method === "TUNAI" ? (
+                  /* Tunai / Cash Mode */
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-900 space-y-3 rounded-lg">
+                    <div className="font-bold flex items-center gap-1.5 text-sm text-emerald-900">
+                      <span>💵</span>
+                      <span>Pembayaran Tunai di Studio / Cash</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-emerald-800">
+                      Silakan lakukan pembayaran secara <strong>TUNAI (Cash)</strong> di kasir studio saat penyerahan alat atau sesi foto berlangsung.
+                    </p>
+                    <div className="pt-2.5 border-t border-emerald-200 text-xs font-bold text-slate-900 flex justify-between items-center">
+                      <span>Total Tagihan Tunai:</span>
+                      <span className="text-sm text-emerald-700 font-extrabold">{formatIDR(totalAmount)}</span>
+                    </div>
+                  </div>
+                ) : method === "QRIS" ? (
                   /* QRIS Mode */
                   <div className="flex flex-col items-center py-2">
                     <div className="p-3 bg-white border border-neutral-300 shadow-md flex flex-col items-center gap-2 relative">
@@ -354,11 +383,11 @@ export default function PaymentSimulator({
                       <input 
                         type="text" 
                         readOnly 
-                        value={getVaNumber(method)} 
+                        value={getVaNumber(method || "BCA")} 
                         className="flex-1 input-modern py-1.5 px-3 font-mono font-bold text-xs bg-slate-100 text-slate-800"
                       />
                       <button 
-                        onClick={() => handleCopy(getVaNumber(method))}
+                        onClick={() => handleCopy(getVaNumber(method || "BCA"))}
                         className="px-4 py-1.5 border border-neutral-250 hover:bg-neutral-100 text-xs font-mono uppercase tracking-widest transition-colors cursor-pointer"
                       >
                         {copied ? "Copied" : "Copy"}
