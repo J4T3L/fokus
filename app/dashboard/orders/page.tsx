@@ -10,6 +10,8 @@ import ReviewModal from "@/app/components/ReviewModal";
 import CancelModal from "@/app/components/CancelModal";
 import RescheduleModal from "@/app/components/RescheduleModal";
 import FormDetailModal from "@/app/components/FormDetailModal";
+import ExtendRentalModal from "@/app/components/ExtendRentalModal";
+import PayFeeModal from "@/app/components/PayFeeModal";
 
 export default function OrdersPage() {
   const { user, isAuthenticated } = useAuth();
@@ -34,6 +36,12 @@ export default function OrdersPage() {
   const [rescheduleOrderId, setRescheduleOrderId] = useState<string | null>(null);
   const [updatingActionId, setUpdatingActionId] = useState<string | null>(null);
   const [detailModalOrder, setDetailModalOrder] = useState<any | null>(null);
+
+  // Extend Rental & Fee Payment modals
+  const [isExtendOpen, setIsExtendOpen] = useState(false);
+  const [extendModalOrder, setExtendModalOrder] = useState<any | null>(null);
+  const [isPayFeeOpen, setIsPayFeeOpen] = useState(false);
+  const [payFeeModalOrder, setPayFeeModalOrder] = useState<any | null>(null);
 
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
 
@@ -305,22 +313,47 @@ export default function OrdersPage() {
                                 o.status !== "Selesai" &&
                                 !hasPendingCancel &&
                                 !hasPendingReschedule && (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                                    {/* Extend Rental Button */}
+                                    <button
+                                      onClick={() => {
+                                        setExtendModalOrder(o);
+                                        setIsExtendOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                                    >
+                                      ⏳ Extend Rental
+                                    </button>
+
+                                    {/* Pay Fee / Denda Button */}
+                                    {((o.lateFee > 0) || (o.damageFee > 0) || (o.lossFee > 0) || (o.extensionFee > 0) || o.feeStatus === "UNPAID") && (
+                                      <button
+                                        onClick={() => {
+                                          setPayFeeModalOrder(o);
+                                          setIsPayFeeOpen(true);
+                                        }}
+                                        className="px-2.5 py-1 bg-rose-700 hover:bg-rose-850 text-white rounded text-[10px] font-mono font-bold transition-colors cursor-pointer shadow-xs"
+                                      >
+                                        💳 Bayar Denda / Fee
+                                      </button>
+                                    )}
+
                                     <button
                                       onClick={() => {
                                         setRescheduleOrderId(o.id);
                                         setIsRescheduleOpen(true);
                                       }}
-                                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer"
                                     >
                                       📅 Reschedule
                                     </button>
+
                                     <button
                                       onClick={() => {
                                         setCancelOrderId(o.id);
                                         setIsCancelOpen(true);
                                       }}
-                                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                                      className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer"
                                     >
                                       ⚠️ Pembatalan
                                     </button>
@@ -425,6 +458,26 @@ export default function OrdersPage() {
           setDetailModalOrder(null);
         }}
         loadingAction={!!updatingActionId}
+      />
+
+      <ExtendRentalModal
+        isOpen={isExtendOpen}
+        onClose={() => {
+          setIsExtendOpen(false);
+          setExtendModalOrder(null);
+        }}
+        order={extendModalOrder}
+        onSuccess={fetchOrders}
+      />
+
+      <PayFeeModal
+        isOpen={isPayFeeOpen}
+        onClose={() => {
+          setIsPayFeeOpen(false);
+          setPayFeeModalOrder(null);
+        }}
+        order={payFeeModalOrder}
+        onSuccess={fetchOrders}
       />
     </>
   );

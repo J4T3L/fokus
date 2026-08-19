@@ -180,8 +180,30 @@ export async function PUT(
         parsedNotes = { userNotes: order.notes || "" };
       }
 
-      // Handle specific action approvals
-      if (action === "ACC_CANCEL") {
+      // Handle specific action approvals and logs
+      if (action === "LOG_PICKUP") {
+        updateData.actualPickup = new Date();
+        updateData.status = "ACTIVE";
+      } else if (action === "LOG_RETURN") {
+        updateData.actualReturn = new Date();
+        updateData.status = "COMPLETED";
+      } else if (action === "COMPLETE_INSPECTION") {
+        const { conditionStatus, damageNotes, damageFee, lossFee, lateFee } = body;
+        updateData.actualReturn = new Date();
+        updateData.conditionStatus = conditionStatus || "NORMAL";
+        updateData.damageNotes = damageNotes || null;
+        updateData.damageFee = Number(damageFee || 0);
+        updateData.lossFee = Number(lossFee || 0);
+        updateData.lateFee = Number(lateFee || 0);
+
+        const totalFees = updateData.damageFee + updateData.lossFee + updateData.lateFee;
+        if (totalFees > 0) {
+          updateData.feeStatus = "UNPAID";
+        } else {
+          updateData.feeStatus = "NONE";
+        }
+        updateData.status = "COMPLETED";
+      } else if (action === "ACC_CANCEL") {
         updateData.status = "CANCELLED";
         if (parsedNotes.cancelRequest) {
           parsedNotes.cancelRequest.status = "APPROVED";
@@ -220,6 +242,7 @@ export async function PUT(
         if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
         else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed") || s.includes("processing")) prismaStatus = "PROCESSING";
         else if (s.includes("aktif") || s.includes("active")) prismaStatus = "ACTIVE";
+        else if (s.includes("overdue") || s.includes("terlambat")) prismaStatus = "OVERDUE";
         else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
         else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
         updateData.status = prismaStatus;

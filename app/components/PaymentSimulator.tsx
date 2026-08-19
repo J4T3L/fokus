@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 
+import EulaModal from "./EulaModal";
+
 interface PaymentSimulatorProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +28,10 @@ export default function PaymentSimulator({
   const [uploadingProof, setUploadingProof] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // EULA & Agreement state
+  const [agreementChecked, setAgreementChecked] = useState(false);
+  const [isEulaOpen, setIsEulaOpen] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       setMethod(null);
@@ -36,6 +42,8 @@ export default function PaymentSimulator({
       setProofImage(null);
       setUploadingProof(false);
       setUploadError(null);
+      setAgreementChecked(false);
+      setIsEulaOpen(false);
       document.body.style.overflow = "hidden";
 
       // Fetch Midtrans token
@@ -97,6 +105,12 @@ export default function PaymentSimulator({
   const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!agreementChecked) {
+      setUploadError("⚠️ WAJIB menyetujui Kontrak Rental & User Agreement (EULA) terlebih dahulu!");
+      return;
+    }
+
     setUploadingProof(true);
     setUploadError(null);
     try {
@@ -121,6 +135,11 @@ export default function PaymentSimulator({
   };
 
   const handleSimulatePayment = async () => {
+    if (!agreementChecked) {
+      setUploadError("⚠️ WAJIB membaca dan menyetujui Kontrak Rental & User Agreement terlebih dahulu!");
+      return;
+    }
+
     if (!proofImage && method !== "TUNAI") {
       setUploadError("⚠️ WAJIB mengunggah foto bukti transfer / resi sebelum konfirmasi pembayaran!");
       return;
@@ -134,6 +153,7 @@ export default function PaymentSimulator({
         paymentMethod: method === "TUNAI" ? "CASH_STUDIO" : method === "QRIS" ? "QRIS" : `VA_${method}`,
         amount: totalAmount,
         proofImage: proofImage || null,
+        agreementAccepted: true,
       };
 
       const res = await fetch("/api/payments/webhook", {
@@ -404,6 +424,38 @@ export default function PaymentSimulator({
                   </div>
                 )}
 
+                {/* User Agreement / EULA Checklist Section */}
+                <div className="mt-4 p-3 bg-orange-50/70 border border-orange-200 rounded-lg space-y-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="agreement-checkbox"
+                      checked={agreementChecked}
+                      onChange={(e) => {
+                        setAgreementChecked(e.target.checked);
+                        if (e.target.checked) setUploadError(null);
+                      }}
+                      className="mt-0.5 w-4 h-4 text-orange-700 accent-orange-700 rounded border-neutral-300 cursor-pointer"
+                    />
+                    <label htmlFor="agreement-checkbox" className="text-[11px] font-mono text-slate-800 leading-snug cursor-pointer select-none">
+                      Saya telah membaca dan menyetujui{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsEulaOpen(true)}
+                        className="text-orange-700 font-bold underline hover:text-orange-950 inline-block cursor-pointer"
+                      >
+                        EULA, Syarat &amp; Kontrak Rental
+                      </button>
+                      , Kode Etik, dan Kebijakan Privasi Fokus Studio.
+                    </label>
+                  </div>
+                  {!agreementChecked && (
+                    <p className="text-[9px] text-rose-600 font-mono font-bold pl-6">
+                      * Kotak ini wajib di-centang sebelum mengunggah bukti pembayaran.
+                    </p>
+                  )}
+                </div>
+
                 {/* Proof Upload Form Section */}
                 <div className="mt-4 pt-3 border-t border-neutral-200">
                   <div className="flex items-center justify-between mb-1.5">
@@ -442,14 +494,16 @@ export default function PaymentSimulator({
                         type="file"
                         accept="image/*"
                         onChange={handleProofUpload}
-                        disabled={uploadingProof}
+                        disabled={uploadingProof || !agreementChecked}
                         className="hidden"
                         id="proof-image-upload"
                       />
                       <label
                         htmlFor="proof-image-upload"
                         className={`w-full flex items-center justify-center gap-2 p-3 bg-white border-2 border-dashed rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-                          uploadError
+                          !agreementChecked
+                            ? "border-neutral-200 bg-neutral-100/70 text-neutral-400 cursor-not-allowed opacity-60"
+                            : uploadError
                             ? "border-rose-400 bg-rose-50/50 text-rose-700"
                             : "border-neutral-300 hover:border-orange-500 text-slate-600"
                         }`}
@@ -466,7 +520,11 @@ export default function PaymentSimulator({
                               <circle cx="8.5" cy="8.5" r="1.5" />
                               <polyline points="21 15 16 10 5 21" />
                             </svg>
-                            <span className="font-mono text-[10px] font-bold">KLIK DI SINI UNTUK UNGGAH FOTO BUKTI TRANSFER (WAJIB *)</span>
+                            <span className="font-mono text-[10px] font-bold">
+                              {!agreementChecked
+                                ? "CENTANG EULA & KONTRAK RENTAL UNTUK BUKA UNGGAH"
+                                : "KLIK DI SINI UNTUK UNGGAH FOTO BUKTI TRANSFER (WAJIB *)"}
+                            </span>
                           </>
                         )}
                       </label>
@@ -484,17 +542,21 @@ export default function PaymentSimulator({
               {/* Simulation Sandbox Block */}
               <div className="mt-4 pt-3 border-t border-neutral-200">
                 <button
-                  disabled={loading}
+                  disabled={loading || !agreementChecked}
                   onClick={handleSimulatePayment}
                   className={`w-full font-mono text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all rounded-lg ${
-                    proofImage
+                    !agreementChecked
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : proofImage
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                      : "bg-slate-300 hover:bg-slate-400 text-slate-700 font-bold"
+                      : "bg-orange-700 hover:bg-orange-850 text-white font-bold"
                   }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {loading
                     ? "Memproses Pembayaran..."
+                    : !agreementChecked
+                    ? "🔒 Centang User Agreement Sebelum Konfirmasi"
                     : proofImage
                     ? "✓ Kirim Bukti Transfer & Konfirmasi Pembayaran"
                     : "⚠️ Unggah Bukti Transfer Dahulu Untuk Konfirmasi"}
@@ -506,6 +568,16 @@ export default function PaymentSimulator({
 
         </div>
       </div>
+
+      {/* EULA Modal */}
+      <EulaModal
+        isOpen={isEulaOpen}
+        onClose={() => setIsEulaOpen(false)}
+        onAccept={() => {
+          setAgreementChecked(true);
+          setUploadError(null);
+        }}
+      />
     </div>
   );
 }

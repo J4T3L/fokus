@@ -162,6 +162,24 @@ model Order {
   notes       String?     @db.Text
   startDate   DateTime?
   endDate     DateTime?
+
+  // Actual Timestamps (Admin Log)
+  actualPickup DateTime?
+  actualReturn DateTime?
+
+  // Penalty, Extensions & Fees
+  lateFee         Int      @default(0)
+  extensionFee    Int      @default(0)
+  damageFee       Int      @default(0)
+  lossFee         Int      @default(0)
+  feeStatus       String?  @default("NONE") // NONE, UNPAID, PENDING_VERIFICATION, PAID, WAIVED
+  damageNotes     String?  @db.Text
+  conditionStatus String?  @default("NORMAL") // NORMAL, DAMAGED, LOST
+
+  // EULA User Agreement
+  agreementAccepted   Boolean   @default(false)
+  agreementAcceptedAt DateTime?
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -196,6 +214,7 @@ enum OrderStatus {
   CONFIRMED
   PROCESSING
   ACTIVE
+  OVERDUE
   COMPLETED
   CANCELLED
 }

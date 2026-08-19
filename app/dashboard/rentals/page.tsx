@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import FormDetailModal from "@/app/components/FormDetailModal";
+import ReturnInspectionModal from "@/app/components/ReturnInspectionModal";
 
 interface RentalItem {
   id: string;
@@ -39,10 +40,20 @@ interface RentalRecord {
   createdAt: string;
   startDate: string;
   endDate: string;
+  actualPickup?: string | null;
+  actualReturn?: string | null;
   startTime?: string;
   endTime?: string;
-  status: "PENDING" | "PROCESSING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  status: "PENDING" | "PROCESSING" | "ACTIVE" | "OVERDUE" | "COMPLETED" | "CANCELLED";
   totalAmount: number;
+  lateFee?: number;
+  extensionFee?: number;
+  damageFee?: number;
+  lossFee?: number;
+  feeStatus?: string;
+  damageNotes?: string | null;
+  conditionStatus?: string;
+  agreementAccepted?: boolean;
   notes?: string;
   cancelRequest?: any;
   rescheduleRequest?: any;
@@ -53,6 +64,7 @@ interface RentalRecord {
   paymentMethod: string;
   isOverdue: boolean;
   diffDays: number;
+  overdueHours?: number;
 }
 
 function formatIDR(n: number) {
@@ -79,6 +91,7 @@ export default function RentalMonitoringPage() {
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [selectedRental, setSelectedRental] = useState<RentalRecord | null>(null);
   const [detailFormRecord, setDetailFormRecord] = useState<RentalRecord | null>(null);
+  const [inspectionRental, setInspectionRental] = useState<RentalRecord | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
@@ -108,17 +121,23 @@ export default function RentalMonitoringPage() {
     }
   }, [user, isAdmin]);
 
-  if (!isAdmin) {
-    return (
-      <div className="p-8 text-center bg-white rounded-2xl border border-slate-200">
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Akses Dibatasi</h2>
-        <p className="text-slate-500 text-sm mb-4">Halaman monitoring sewa barang hanya dapat diakses oleh Admin.</p>
-        <Link href="/dashboard" className="btn-primary inline-block px-4 py-2 text-sm">
-          Kembali ke Dashboard
-        </Link>
-      </div>
-    );
-  }
+  const handleLogPickup = async (rentalId: string) => {
+    try {
+      setUpdatingId(rentalId);
+      const res = await fetch(`/api/orders/${rentalId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "LOG_PICKUP" }),
+      });
+      if (res.ok) {
+        await fetchRentals();
+      }
+    } catch (err) {
+      console.error("Error logging pickup:", err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const handleUpdateStatus = async (rentalId: string, newStatus: string) => {
     try {
@@ -431,20 +450,27 @@ export default function RentalMonitoringPage() {
 
                       {/* Timeline */}
                       <td className="px-5 py-4 align-top">
-                        <div className="space-y-1">
+                        <div className="space-y-1 text-xs">
                           <p className="text-slate-600 font-medium">
-                            <span className="text-slate-400 font-normal">Mulai:</span> {formatDate(record.startDate)}
+                            <span className="text-slate-400 font-normal">Janji Sewa:</span> {formatDate(record.startDate)} &rarr; {formatDate(record.endDate)}
                           </p>
-                          <p className="text-slate-600 font-medium">
-                            <span className="text-slate-400 font-normal">Kembali:</span> {formatDate(record.endDate)}
-                          </p>
+                          {record.actualPickup && (
+                            <p className="text-emerald-700 font-mono text-[11px] font-bold">
+                              ✓ Actual Pickup: {new Date(record.actualPickup).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          )}
+                          {record.actualReturn && (
+                            <p className="text-emerald-800 font-mono text-[11px] font-bold">
+                              ✓ Actual Return: {new Date(record.actualReturn).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          )}
                           {record.isOverdue && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse">
-                              🚨 TERLAMBAT {Math.abs(record.diffDays)} HARI
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200 animate-pulse">
+                              🔴 OVERDUE ({record.overdueHours || 1} jam terlambat)
                             </span>
                           )}
                           {!record.isOverdue && record.status === "ACTIVE" && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
                               ⏱️ Sisa {record.diffDays} Hari
                             </span>
                           )}
@@ -458,6 +484,8 @@ export default function RentalMonitoringPage() {
                             className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               record.status === "ACTIVE"
                                 ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                : record.status === "OVERDUE"
+                                ? "bg-rose-100 text-rose-700 border border-rose-300"
                                 : record.status === "PROCESSING" || record.status === "PENDING"
                                 ? "bg-amber-100 text-amber-700 border border-amber-200"
                                 : record.status === "COMPLETED"
@@ -467,6 +495,8 @@ export default function RentalMonitoringPage() {
                           >
                             {record.status === "ACTIVE"
                               ? "Sedang Dipinjam"
+                              : record.status === "OVERDUE"
+                              ? "OVERDUE (Terlambat)"
                               : record.status === "PROCESSING"
                               ? "Menunggu Pickup"
                               : record.status === "PENDING"
@@ -478,6 +508,11 @@ export default function RentalMonitoringPage() {
                           <p className="text-slate-400 text-[10px] font-mono block">
                             Total: {formatIDR(record.totalAmount)}
                           </p>
+                          {record.conditionStatus && record.conditionStatus !== "NORMAL" && (
+                            <span className="inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300 rounded">
+                              ⚠️ {record.conditionStatus}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -514,21 +549,21 @@ export default function RentalMonitoringPage() {
                             {record.status === "PROCESSING" && (
                               <button
                                 disabled={isUpdating}
-                                onClick={() => handleUpdateStatus(record.id, "ACTIVE")}
+                                onClick={() => handleLogPickup(record.id)}
                                 className="w-full sm:w-auto px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
                               >
-                                {isUpdating ? "Memproses..." : "📦 Serahkan Barang (Aktifkan)"}
+                                {isUpdating ? "Memproses..." : "📦 Catat Actual Pickup (Serahkan)"}
                               </button>
                             )}
 
-                            {record.status === "ACTIVE" && (
+                            {(record.status === "ACTIVE" || record.status === "OVERDUE") && (
                               <div className="space-y-1 mt-1">
                                 <button
                                   disabled={isUpdating}
-                                  onClick={() => handleUpdateStatus(record.id, "COMPLETED")}
-                                  className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                                  onClick={() => setInspectionRental(record)}
+                                  className="w-full sm:w-auto px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
                                 >
-                                  {isUpdating ? "Memproses..." : "✅ Terima Pengembalian"}
+                                  ✅ Terima Pengembalian &amp; Inspeksi
                                 </button>
                                 {record.borrower.phone && (
                                   <a
@@ -539,7 +574,7 @@ export default function RentalMonitoringPage() {
                                       const itemName = record.items.map(i => i.equipment?.name).filter(Boolean).join(", ") || "alat rental";
                                       const endDateStr = new Date(record.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
                                       const msg = record.isOverdue
-                                        ? `Halo Kak ${record.borrower.name}, penyewaan ${itemName} di Fokus Studio telah TERLAMBAT ${Math.abs(record.diffDays)} hari (tgl kembali: ${endDateStr}). Mohon segera mengembalikan unit ke studio. Terima kasih! 🙏`
+                                        ? `Halo Kak ${record.borrower.name}, penyewaan ${itemName} di Fokus Studio telah TERLAMBAT ${record.overdueHours || 1} jam (tgl kembali: ${endDateStr}). Mohon segera mengembalikan unit ke studio. Terima kasih! 🙏`
                                         : `Halo Kak ${record.borrower.name}, pengingat penyewaan ${itemName} di Fokus Studio akan berakhir pada ${endDateStr}. Mohon dikembalikan tepat waktu. Terima kasih! 🙏`;
                                       return `https://wa.me/${cleaned}?text=${encodeURIComponent(msg)}`;
                                     })()}
@@ -673,6 +708,13 @@ export default function RentalMonitoringPage() {
           setDetailFormRecord(null);
         }}
         loadingAction={!!updatingId}
+      />
+
+      <ReturnInspectionModal
+        isOpen={!!inspectionRental}
+        onClose={() => setInspectionRental(null)}
+        rental={inspectionRental}
+        onSuccess={fetchRentals}
       />
     </div>
   );

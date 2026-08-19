@@ -52,10 +52,13 @@ export async function GET(request: Request) {
         : new Date(startDate.getTime() + (order.items[0]?.duration || 1) * 86400000);
 
       const isOverdue =
-        (order.status === "ACTIVE" || order.status === "PROCESSING") && endDate < now;
+        (order.status === "ACTIVE" || order.status === "PROCESSING" || order.status === "OVERDUE") && endDate < now;
 
       const diffMs = endDate.getTime() - now.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      
+      const overdueMs = now.getTime() - endDate.getTime();
+      const overdueHours = isOverdue ? Math.max(1, Math.floor(overdueMs / (1000 * 60 * 60))) : 0;
 
       let parsedNotes: any = null;
       try {
@@ -73,7 +76,17 @@ export async function GET(request: Request) {
         createdAt: order.createdAt.toISOString(),
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: order.status,
+        actualPickup: order.actualPickup ? order.actualPickup.toISOString() : null,
+        actualReturn: order.actualReturn ? order.actualReturn.toISOString() : null,
+        lateFee: order.lateFee || 0,
+        extensionFee: order.extensionFee || 0,
+        damageFee: order.damageFee || 0,
+        lossFee: order.lossFee || 0,
+        feeStatus: order.feeStatus || "NONE",
+        damageNotes: order.damageNotes || null,
+        conditionStatus: order.conditionStatus || "NORMAL",
+        agreementAccepted: order.agreementAccepted || false,
+        status: isOverdue ? "OVERDUE" : order.status,
         totalAmount: order.totalAmount,
         notes: order.notes,
         cancelRequest: parsedNotes?.cancelRequest || null,
@@ -101,6 +114,7 @@ export async function GET(request: Request) {
                 image: item.equipment.image,
                 stock: item.equipment.stock,
                 available: item.equipment.available,
+                pricePerDay: item.equipment.pricePerDay,
               }
             : null,
         })),
@@ -109,6 +123,7 @@ export async function GET(request: Request) {
         studio: null,
         isOverdue,
         diffDays,
+        overdueHours,
       };
     });
 
