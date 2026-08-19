@@ -242,7 +242,7 @@ export async function PUT(
         if (s.includes("menunggu") || s.includes("pending")) prismaStatus = "PENDING";
         else if (s.includes("diproses") || s.includes("lunas") || s.includes("confirmed") || s.includes("processing")) prismaStatus = "PROCESSING";
         else if (s.includes("aktif") || s.includes("active")) prismaStatus = "ACTIVE";
-        else if (s.includes("overdue") || s.includes("terlambat")) prismaStatus = "OVERDUE";
+        else if (s.includes("overdue") || s.includes("terlambat")) prismaStatus = "OVERDUE" as any;
         else if (s.includes("selesai") || s.includes("completed")) prismaStatus = "COMPLETED";
         else if (s.includes("batal") || s.includes("cancel") || s.includes("dibatalkan")) prismaStatus = "CANCELLED";
         updateData.status = prismaStatus;

@@ -7,7 +7,7 @@ export async function GET() {
     const confirmedOrders = await prisma.order.findMany({
       where: {
         status: {
-          in: ["CONFIRMED", "PROCESSING", "ACTIVE", "OVERDUE", "COMPLETED"],
+          in: ["CONFIRMED", "PROCESSING", "ACTIVE", "OVERDUE", "COMPLETED"] as any,
         },
       },
       orderBy: { createdAt: "desc" },
