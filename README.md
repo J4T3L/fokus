@@ -1,17 +1,24 @@
 # Fokus Studio & Rental Platform
 
-Fokus Studio & Rental adalah aplikasi web modern berbasis Next.js untuk penyewaan studio foto, kamera, lensa, serta penyewaan jasa fotografer secara online. Aplikasi ini dilengkapi sistem verifikasi ketersediaan studio secara real-time, validasi stok sewa alat, payment gateway simulator, dan dasbor analitik keuangan.
+Fokus Studio & Rental adalah aplikasi web modern berbasis Next.js untuk penyewaan studio foto, kamera, lensa, serta penyewaan jasa fotografer secara online. Aplikasi ini dilengkapi sistem verifikasi ketersediaan studio secara real-time, validasi stok sewa alat, payment gateway simulator, EULA gate checklist, pencatatan timestamp pickup/return, penanganan keterlambatan (*OVERDUE*), perpanjangan sewa (*Extend Rental*), inspeksi pengembalian barang, dan pemisahan dasbor analitik keuangan.
 
 ---
 
 ## 🚀 Fitur Utama
 
-1. **Kalender Ketersediaan Studio**: Menghindari tabrakan waktu sewa dengan jeda sterilisasi *cooldown* 30 menit.
-2. **Validasi Stok Alat**: Mengontrol kuantitas sewa kamera/lensa berdasarkan tanggal overlapping.
-3. **Cart Drawer Terintegrasi**: Keranjang belanja modular di sidebar global.
-4. **Simulator Webhook Pembayaran**: Simulasi VA bank dan QRIS dengan instant update database via webhook.
-5. **Ulasan & Rating Bintang**: Mengumpulkan umpan balik klien untuk ditampilkan dinamis di beranda depan.
-6. **Laporan Keuangan & Grafik SVG**: Dashboard grafik interaktif dan tombol ekspor data transaksi ke spreadsheet CSV.
+1. **User Agreement / EULA Gate**: Modal & checkbox persetujuan Kontrak Sewa 4 pasal (wajib di-centang sebelum mengunggah resi bukti transfer/konfirmasi bayar).
+2. **Pencatatan Timestamp Actual Pickup & Actual Return**: Log waktu presisi pencatatan admin saat alat diambil (*pickup*) dan dikembalikan (*return*).
+3. **Status OVERDUE & Pembayaran Denda**: Otomatisasi status `OVERDUE` beserta penghitung jam keterlambatan, dan modal bayar denda (Transfer/Cash) untuk penyewa.
+4. **Perpanjang Sewa (Extend Rental)**: Opsi fleksibel perpanjangan durasi sewa sekelompok alat dengan akumulasi tarif harian otomatis.
+5. **Form Inspeksi Pengembalian Barang**: Penilaian kondisi unit saat dikembalikan: 🟢 *Tidak ada Kerusakan*, 🔴 *Ada Kerusakan* (estimasi perbaikan), ❌ *Barang Hilang* (ganti rugi 100% barang baru).
+6. **Pemisahan Laporan Keuangan (Ledger Split)**: Dasbor keuangan terpisah antara **Buku Kas Persewaan Utama** (sewa murni & refund) vs **Buku Kas Denda, Kerusakan & Kehilangan**.
+7. **Metode Pembayaran Tunai (Cash)**: Opsi pembayaran langsung di studio kasir disamping Transfer Virtual Account Bank & QRIS.
+8. **Kalender Ketersediaan Studio**: Menghindari tabrakan waktu sewa dengan jeda sterilisasi *cooldown* 30 menit.
+9. **Validasi Stok Alat**: Mengontrol kuantitas sewa kamera/lensa berdasarkan tanggal overlapping.
+10. **Cart Drawer Terintegrasi**: Keranjang belanja modular di sidebar global.
+11. **Simulator Webhook Pembayaran & Upload Resi**: Simulasi VA bank, QRIS, & Tunai dengan instant update database via webhook & upload foto bukti transfer.
+12. **Ulasan & Rating Bintang**: Mengumpulkan umpan balik klien untuk ditampilkan dinamis di beranda depan.
+13. **Laporan Keuangan & Grafik SVG**: Dashboard grafik interaktif dan tombol ekspor data transaksi ke spreadsheet CSV.
 
 > [!NOTE]
 > Untuk dokumentasi detail mekanisme kerja backend dan alur klien dari setiap fitur, silakan baca [FITUR.md](./FITUR.md).
@@ -20,10 +27,9 @@ Fokus Studio & Rental adalah aplikasi web modern berbasis Next.js untuk penyewaa
 
 ## 🛠️ Tech Stack & Prasyarat
 
-* **Frontend & Backend**: Next.js 15 (App Router), React, TailwindCSS
-* **Database & ORM**: SQLite & Prisma ORM
-* **State Management**: React Context (Auth, Cart)
-* **Animasi**: IntersectionObserver Reveal Component
+* **Frontend & Backend**: Next.js (App Router), React, Vanilla CSS / TailwindCSS
+* **Database & ORM**: MySQL & Prisma ORM
+* **State Management**: React Context (AuthContext)
 * **Runtime**: Node.js v18+
 
 ---
@@ -45,8 +51,8 @@ npm install
 ### 2. Konfigurasi Environment Variable
 Buat berkas `.env` di direktori utama (jika belum ada) dan sesuaikan konfigurasi environment:
 ```env
-# Koneksi Database
-DATABASE_URL="mysql://capture_user:password123@localhost:3306/capture"
+# Koneksi Database MySQL
+DATABASE_URL="mysql://root@localhost:3306/fokus"
 
 # Kredensial Google OAuth 2.0 (Google Sign-In)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
@@ -68,10 +74,13 @@ Untuk mengaktifkan fungsionalitas Google Sign-In pada halaman Login & Registrasi
 10. Restart dev server (`npm run dev`). Halaman login & daftar kini otomatis mengaktifkan integrasi Google secara langsung.
 
 ### 3. Migrasi Database & Seeding Data
-Jalankan perintah Prisma untuk membuat tabel database SQLite dan mengisi data awal (dummy/seed data):
+Jalankan perintah Prisma untuk membuat tabel database MySQL dan mengisi data awal (dummy/seed data):
 ```bash
-# Sinkronisasi schema Prisma ke SQLite
-npx prisma migrate dev --name init
+# Push schema Prisma ke MySQL
+npx prisma db push
+
+# Generate Prisma Client
+npx prisma generate
 
 # Jalankan seeder database
 npx prisma db seed
@@ -91,8 +100,8 @@ Gunakan akun demo berikut pada halaman login untuk menguji berbagai akses level:
 
 | Peran (Role) | Email | Password | Kegunaan |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@fokus.id` | `admin123` | Melihat grafik keuntungan SVG, mengekspor laporan keuangan CSV, dan mengelola order. |
-| **User** | `user@fokus.id` | `user123` | Simulasi booking studio, memilih sewa alat, checkout, melakukan pembayaran VA/QRIS, dan memberi ulasan bintang. |
+| **Admin** | `admin@fokus.id` | `admin123` | Mencatat actual pickup/return, memilih inspeksi kondisi barang, melihat laporan keuangan terpisah, mengekspor laporan keuangan CSV, dan mengelola order. |
+| **User** | `user@fokus.id` | `user123` | Menyutujui EULA, simulasi booking studio, memilih sewa alat, checkout, mengunggah bukti tf, bayar denda, extend rental, dan memberi ulasan bintang. |
 | **Super User** | `super@fokus.id` | `super123` | Mengakses metrik status server internal. |
 
 ---
@@ -100,7 +109,7 @@ Gunakan akun demo berikut pada halaman login untuk menguji berbagai akses level:
 ## 🗂️ Struktur Direktori Utama
 
 * `/app` - Halaman utama Next.js, API Route handler, dan Context Providers.
-* `/app/components` - Komponen UI reusable (Navbar, CartDrawer, PaymentSimulator, dll).
-* `/app/dashboard` - Antarmuka halaman Dashboard khusus User dan Admin.
-* `/prisma` - Berkas konfigurasi skema Prisma (`schema.prisma`) dan skrip generator dummy data (`seed.ts`).
-* `/public` - Aset gambar statis, ikon, dan berkas statis lainnya.
+* `/app/components` - Komponen UI reusable (Navbar, PaymentSimulator, EulaModal, ExtendRentalModal, PayFeeModal, ReturnInspectionModal, dll).
+* `/app/dashboard` - Antarmuka halaman Dashboard khusus User dan Admin (`/orders`, `/rentals`, `/finance`, `/equipment`, `/studios`, dll).
+* `/prisma` - Berkas konfigurasi skema Prisma (`schema.prisma`) dan skrip seeder database (`seed.ts`).
+* `/public` - Aset gambar statis, foto upload resi (`/public/uploads`), dan berkas statis lainnya.
